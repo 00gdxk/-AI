@@ -24,11 +24,13 @@ const translations = {
     gallery: "Gallery",
     newTrip: "New Trip",
     savePlan: "Save Plan",
+    saving: "Saving...",
     planSaved: "Plan Saved",
     savedTrips: "Saved Journeys",
     noSaved: "Your future adventures will appear here.",
     delete: "Delete",
     view: "View Plan",
+    enriching: "Enriching visuals",
     loading: ["Scouting locations...", "Consulting local experts...", "Mapping your journey...", "Finding the best views...", "Perfecting your itinerary..."]
   },
   cn: {
@@ -46,11 +48,13 @@ const translations = {
     gallery: "图库",
     newTrip: "新行程",
     savePlan: "保存行程",
+    saving: "正在保存...",
     planSaved: "已保存",
     savedTrips: "已保存的旅程",
     noSaved: "您未来的冒险将出现在这里。",
     delete: "删除",
     view: "查看行程",
+    enriching: "正在丰富视觉效果",
     loading: ["正在寻找地点...", "咨询当地专家...", "规划您的旅程...", "寻找最佳景观...", "正在完善行程..."]
   },
   jp: {
@@ -68,11 +72,13 @@ const translations = {
     gallery: "ギャラリー",
     newTrip: "新しい旅",
     savePlan: "プランを保存",
+    saving: "保存中...",
     planSaved: "保存済み",
     savedTrips: "保存済みの旅",
     noSaved: "将来の冒険がここに表示されます。",
-    delete: "删除",
+    delete: "削除",
     view: "プランを見る",
+    enriching: "ビジュアルを生成中",
     loading: ["場所をスカウト中...", "専門家に相談中...", "ルートをマッピング中...", "最高の景色を探しています...", "旅程を仕上げています..."]
   }
 };
@@ -87,6 +93,9 @@ const App: React.FC = () => {
   const [days, setDays] = useState(3);
   const [interests, setInterests] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [imageGenProgress, setImageGenProgress] = useState({ current: 0, total: 0 });
+  
   const [tripData, setTripData] = useState<TripData | null>(null);
   const [savedTrips, setSavedTrips] = useState<TripData[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +106,6 @@ const App: React.FC = () => {
 
   const isCurrentTripSaved = !!tripData && savedTrips.some(trip => trip.id === tripData.id);
 
-  // Helper to save trips to local storage with quota error handling
   const saveTripsToLocalStorage = useCallback((trips: TripData[]) => {
     let currentTrips = [...trips];
     let success = false;
@@ -109,7 +117,7 @@ const App: React.FC = () => {
       } catch (e: any) {
         if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22) {
           if (currentTrips.length > 0) {
-            console.warn("Storage quota exceeded. Removing oldest trip to make room.");
+            console.warn("Storage quota full. Removing oldest saved trip.");
             currentTrips.pop();
           } else {
             localStorage.removeItem(STORAGE_KEY);
@@ -121,10 +129,7 @@ const App: React.FC = () => {
         }
       }
     }
-    // Sync state back if we had to pop items to fit quota
-    if (currentTrips.length !== trips.length) {
-      setSavedTrips(currentTrips);
-    }
+    return currentTrips;
   }, []);
 
   useEffect(() => {
@@ -150,11 +155,6 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Save whenever the list changes
-  useEffect(() => {
-    saveTripsToLocalStorage(savedTrips);
-  }, [savedTrips, saveTripsToLocalStorage]);
-
   const handlePlanSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!destination.trim()) return;
@@ -164,6 +164,7 @@ const App: React.FC = () => {
     setTripData(null);
     setCurrentSlideIndex(0);
     setViewMode('itinerary');
+    setImageGenProgress({ current: 0, total: 0 });
 
     try {
       const result = await generateTravelPlan(destination, days, interests, lang, userLocation);
@@ -176,7 +177,7 @@ const App: React.FC = () => {
           days
         };
         setTripData(enhancedResult);
-        generateImagesForSlides(enhancedResult);
+        generateImagesSequentially(enhancedResult);
       } else {
         throw new Error("No plan was generated.");
       }
@@ -187,51 +188,62 @@ const App: React.FC = () => {
     }
   };
 
-  const generateImagesForSlides = async (data: TripData) => {
-    const imagePromises = data.slides.map(async (slide, index) => {
-      if (slide.location) {
-        // Stagger calls slightly to be nice to API
-        await new Promise(resolve => setTimeout(resolve, index * 800));
-        const imageUrl = await generateLocationImage(slide.location.name, slide.location.description);
-        return { index, imageUrl };
-      }
-      return { index, imageUrl: null };
-    });
-
-    const results = await Promise.all(imagePromises);
+  const generateImagesSequentially = async (data: TripData) => {
+    setImageGenProgress({ current: 0, total: data.slides.length });
     
-    setTripData(prev => {
-      if (!prev || prev.id !== data.id) return prev;
-      const newSlides = [...prev.slides];
-      results.forEach(({ index, imageUrl }) => {
-        if (imageUrl) newSlides[index] = { ...newSlides[index], imageUrl };
-      });
-      return { ...prev, slides: newSlides };
-    });
+    for (let i = 0; i < data.slides.length; i++) {
+      const slide = data.slides[i];
+      if (slide.location) {
+        try {
+          if (i > 0) await new Promise(resolve => setTimeout(resolve, 2500));
+          
+          const imageUrl = await generateLocationImage(slide.location.name, slide.location.description);
+          if (imageUrl) {
+            setTripData(prev => {
+              if (!prev || prev.id !== data.id) return prev;
+              const newSlides = [...prev.slides];
+              newSlides[i] = { ...newSlides[i], imageUrl };
+              return { ...prev, slides: newSlides };
+            });
+          }
+          setImageGenProgress(prev => ({ ...prev, current: i + 1 }));
+        } catch (error: any) {
+          if (error.message === 'RATE_LIMIT') {
+            console.warn("Auto-generation paused due to rate limits.");
+            break;
+          }
+        }
+      }
+    }
   };
 
-  const handleSaveTrip = () => {
-    if (!tripData) return;
-    
-    // Check if trip actually has any content to avoid empty saves
+  const handleSaveTrip = async () => {
+    if (!tripData || isSaving) return;
     if (tripData.slides.length === 0) return;
 
-    setSavedTrips(current => {
-      const filtered = current.filter(t => t.id !== tripData.id);
-      // We prioritize the NEW trip. If storage is full, the OLD ones will be dropped by the useEffect hook.
-      return [tripData, ...filtered].slice(0, 10);
-    });
+    setIsSaving(true);
+    // Add a tiny artificial delay to make the saving state visible and feel robust
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    const newSavedList = [tripData, ...savedTrips.filter(t => t.id !== tripData.id)].slice(0, 6);
+    const successfullySavedList = saveTripsToLocalStorage(newSavedList);
+    setSavedTrips(successfullySavedList);
+    setIsSaving(false);
   };
 
   const deleteSavedTrip = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setSavedTrips(prev => prev.filter(t => t.id !== id));
+    const newList = savedTrips.filter(t => t.id !== id);
+    saveTripsToLocalStorage(newList);
+    setSavedTrips(newList);
   };
 
   const loadSavedTrip = (trip: TripData) => {
     setTripData(trip);
     setCurrentSlideIndex(0);
     setViewMode('itinerary');
+    // Reset progress when loading a static saved trip
+    setImageGenProgress({ current: 0, total: 0 });
   };
 
   const handleImageUpdate = async (index: number, newImageUrl: string) => {
@@ -241,9 +253,11 @@ const App: React.FC = () => {
       const newSlides = [...prev.slides];
       newSlides[index] = { ...newSlides[index], imageUrl: compressed };
       const updated = { ...prev, slides: newSlides };
-      // Sync with saved list if already saved
+      
       if (savedTrips.some(t => t.id === updated.id)) {
-        setSavedTrips(current => current.map(t => t.id === updated.id ? updated : t));
+        const newList = savedTrips.map(t => t.id === updated.id ? updated : t);
+        saveTripsToLocalStorage(newList);
+        setSavedTrips(newList);
       }
       return updated;
     });
@@ -261,6 +275,7 @@ const App: React.FC = () => {
   }, [loading, t.loading.length]);
 
   const isPresentationMode = !!tripData;
+  const isImageEnriching = imageGenProgress.total > 0 && imageGenProgress.current < imageGenProgress.total;
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-slate-50">
@@ -272,9 +287,19 @@ const App: React.FC = () => {
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                </svg>
              </div>
-             <h1 className={`font-outfit font-bold text-slate-900 ${isPresentationMode ? 'text-xl' : 'text-2xl'}`}>
-               {t.title}
-             </h1>
+             <div className="flex flex-col">
+               <h1 className={`font-outfit font-bold text-slate-900 leading-none ${isPresentationMode ? 'text-xl' : 'text-2xl'}`}>
+                 {t.title}
+               </h1>
+               {isImageEnriching && (
+                 <div className="flex items-center mt-1">
+                    <span className="flex h-1.5 w-1.5 rounded-full bg-indigo-400 animate-pulse mr-1.5"></span>
+                    <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-tighter">
+                      {t.enriching} ({imageGenProgress.current}/{imageGenProgress.total})
+                    </span>
+                 </div>
+               )}
+             </div>
           </div>
           
           <div className="flex items-center space-x-4">
@@ -294,17 +319,25 @@ const App: React.FC = () => {
               <div className="flex items-center space-x-4">
                 <nav className="flex items-center bg-slate-100 p-1 rounded-xl">
                   <button onClick={() => setViewMode('itinerary')} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${viewMode === 'itinerary' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>{t.itinerary}</button>
-                  <button onClick={() => setViewMode('gallery')} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${viewMode === 'gallery' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>{t.gallery}</button>
+                  <button onClick={() => setViewMode('gallery')} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${viewMode === 'gallery' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>
+                    {t.gallery}
+                    {isImageEnriching && <span className="ml-1 text-[10px] bg-indigo-100 text-indigo-600 px-1 rounded-full">{imageGenProgress.current}/{imageGenProgress.total}</span>}
+                  </button>
                 </nav>
                 
                 <div className="h-6 w-px bg-slate-200" />
 
                 <button 
                   onClick={handleSaveTrip} 
-                  disabled={isCurrentTripSaved}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center transition-all ${isCurrentTripSaved ? 'bg-emerald-50 text-emerald-600 cursor-default' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 active:scale-95'}`}
+                  disabled={isCurrentTripSaved || isSaving}
+                  className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center transition-all min-w-[110px] justify-center ${isCurrentTripSaved ? 'bg-emerald-50 text-emerald-600 cursor-default' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 active:scale-95 disabled:opacity-70'}`}
                 >
-                  {isCurrentTripSaved ? (
+                  {isSaving ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                      {t.saving}
+                    </>
+                  ) : isCurrentTripSaved ? (
                     <>
                       <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
                       {t.planSaved}
@@ -431,6 +464,7 @@ const App: React.FC = () => {
                 <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest">{tripData.days} {t.days} in {tripData.destination}</p>
               </div>
               <TravelMap 
+                key={tripData.id}
                 slides={tripData.slides} 
                 currentSlideIndex={currentSlideIndex} 
                 onMarkerClick={(idx) => setCurrentSlideIndex(idx)}
@@ -441,7 +475,12 @@ const App: React.FC = () => {
 
         {isPresentationMode && viewMode === 'gallery' && tripData && (
           <div className="absolute inset-0 z-30 animate-fadeIn">
-            <TripGallery slides={tripData.slides} onNavigateToSlide={(idx) => { setCurrentSlideIndex(idx); setViewMode('itinerary'); }} onUpdateImage={handleImageUpdate} />
+            <TripGallery 
+              slides={tripData.slides} 
+              onNavigateToSlide={(idx) => { setCurrentSlideIndex(idx); setViewMode('itinerary'); }} 
+              onUpdateImage={handleImageUpdate} 
+              imageGenProgress={imageGenProgress}
+            />
           </div>
         )}
       </main>
