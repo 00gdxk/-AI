@@ -20,10 +20,14 @@ const PlanDisplay: React.FC<PlanDisplayProps> = ({
   language = 'en'
 }) => {
   const sectionLabels = {
-    en: { log: "Logistics", exp: "Experience", food: "Refuel", info: "Practical" },
-    cn: { log: "动线安排", exp: "深度游玩", food: "餐饮补给", info: "出行备忘" },
-    jp: { log: "移動・物流", exp: "体験・観光", food: "食事・休憩", info: "実用情報" }
-  }[language as 'en'|'cn'|'jp'] || { log: "Logistics", exp: "Experience", food: "Refuel", info: "Practical" };
+    en: { log: "Logistics", exp: "Experience", food: "Refuel", info: "Practical", day: "Day" },
+    cn: { log: "动线安排", exp: "深度游玩", food: "餐饮补给", info: "出行备忘", day: "第" },
+    jp: { log: "移動・物流", exp: "体験・観光", food: "食事・休憩", info: "実用情報", day: "日目" }
+  }[language as 'en'|'cn'|'jp'] || { log: "Logistics", exp: "Experience", food: "Refuel", info: "Practical", day: "Day" };
+
+  const dayLabel = language === 'cn' ? `${sectionLabels.day}${slide.dayNumber}天` : 
+                   language === 'jp' ? `${slide.dayNumber}${sectionLabels.day}` : 
+                   `${sectionLabels.day} ${slide.dayNumber}`;
 
   return (
     <div className="h-full flex flex-col bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 relative">
@@ -42,6 +46,9 @@ const PlanDisplay: React.FC<PlanDisplayProps> = ({
         
         <div className="relative z-10">
           <div className="flex justify-between items-center mb-1">
+            <span className="bg-white/20 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-bold tracking-widest uppercase text-white border border-white/20">
+              {dayLabel}
+            </span>
             <span className="text-[10px] font-bold tracking-widest uppercase opacity-90 text-indigo-100">
               {currentIndex + 1} / {totalSlides}
             </span>

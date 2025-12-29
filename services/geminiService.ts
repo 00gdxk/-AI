@@ -8,6 +8,43 @@ const cleanJson = (text: string): string => {
   return text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/, '').trim();
 };
 
+/**
+ * Compresses a base64 image string to a smaller JPEG to save localStorage space.
+ */
+const compressImage = (base64Str: string, quality: number = 0.5): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(base64Str);
+        return;
+      }
+
+      // Max width for storage images
+      const MAX_WIDTH = 800;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > MAX_WIDTH) {
+        height = Math.round((height * MAX_WIDTH) / width);
+        width = MAX_WIDTH;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Convert to JPEG with reduced quality
+      const compressed = canvas.toDataURL('image/jpeg', quality);
+      resolve(compressed);
+    };
+    img.onerror = () => resolve(base64Str);
+  });
+};
+
 export const generateTravelPlan = async (
   destination: string,
   days: number,
@@ -23,6 +60,11 @@ export const generateTravelPlan = async (
   const targetLanguage = langMap[language] || "English";
 
   const prompt = `Plan a detailed ${days}-day travel itinerary for ${destination} based on interests: ${interests}.
+  
+  STRICT REQUIREMENT: The itinerary MUST span exactly ${days} days. Do not generate more or fewer days than requested.
+  
+  For each activity (Slide), you MUST provide a "dayNumber" (from 1 to ${days}).
+  Aim for 2-4 key destination points per day.
   
   IMPORTANT: All text in the JSON response MUST be in ${targetLanguage}.
   
@@ -46,6 +88,7 @@ export const generateTravelPlan = async (
           type: Type.OBJECT,
           properties: {
             id: { type: Type.STRING },
+            dayNumber: { type: Type.INTEGER, description: "The day of the trip this activity occurs on (1-indexed)" },
             title: { type: Type.STRING },
             subtitle: { type: Type.STRING },
             bullets: { type: Type.ARRAY, items: { type: Type.STRING } },
@@ -94,7 +137,7 @@ export const generateTravelPlan = async (
               }
             }
           },
-          required: ["title", "bullets"]
+          required: ["title", "bullets", "dayNumber"]
         }
       }
     },
@@ -113,7 +156,11 @@ export const generateTravelPlan = async (
 
     const text = response.text;
     if (text) {
-      return JSON.parse(cleanJson(text)) as TripData;
+      const parsed = JSON.parse(cleanJson(text)) as TripData;
+      if (parsed.slides) {
+        parsed.slides.sort((a, b) => a.dayNumber - b.dayNumber);
+      }
+      return parsed;
     }
   } catch (error: any) {
     console.error("Error generating travel plan:", error);
@@ -136,7 +183,7 @@ export const fetchActivitiesWithSearch = async (locationName: string): Promise<s
 };
 
 export const generateLocationImage = async (locationName: string, description: string = ''): Promise<string | null> => {
-  const prompt = `Photorealistic travel image of ${locationName}. ${description}. Scenic, professional photography, high resolution, 4k, cinematic lighting.`;
+  const prompt = `Photorealistic travel image of ${locationName}. ${description}. Scenic, cinematic lighting, 4k.`;
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
@@ -145,11 +192,17 @@ export const generateLocationImage = async (locationName: string, description: s
     });
     for (const part of response.candidates?.[0]?.content?.parts || []) {
       if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
+        const rawBase64 = `data:image/png;base64,${part.inlineData.data}`;
+        // Compress immediately to save memory and storage space
+        return await compressImage(rawBase64, 0.6);
       }
     }
   } catch (error) {
     console.error(`Failed to generate image`, error);
   }
   return null;
+};
+
+export const compressUploadedImage = async (base64Str: string): Promise<string> => {
+  return await compressImage(base64Str, 0.6);
 };
