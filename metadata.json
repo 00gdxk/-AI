@@ -1,0 +1,8 @@
+{
+  "name": "ZenithTravel AI Planner",
+  "description": "A high-end, AI-powered travel planning application that crafts personalized itineraries using Gemini AI and Google Maps grounding.",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera"
+  ]
+}
