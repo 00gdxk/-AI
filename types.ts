@@ -10,11 +10,12 @@ export interface Slide {
   id: string;
   title: string;
   subtitle?: string;
-  dayNumber: number; // New field to track which day this activity belongs to
+  dayNumber: number;
   bullets: string[];
   location?: LocationData;
   imageUrl?: string;
-  // New detailed fields
+  imageSource?: string;
+  imageSourceTitle?: string;
   logistics?: {
     timeSlot: string;
     transport: string;
@@ -40,9 +41,9 @@ export interface Slide {
 }
 
 export interface TripData {
-  id: string; // Unique identifier for saving
-  timestamp: number; // When it was created
-  destination: string; // The search term used
+  id: string;
+  timestamp: number;
+  destination: string;
   days: number;
   tripTitle: string;
   tripSummary: string;

@@ -14,6 +14,7 @@ const cleanJson = (text: string): string => {
 const compressImage = (base64Str: string, quality: number = 0.5): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
+    img.crossOrigin = "Anonymous"; // Crucial for external images
     img.src = base64Str;
     img.onload = () => {
       const canvas = document.createElement('canvas');
@@ -23,7 +24,6 @@ const compressImage = (base64Str: string, quality: number = 0.5): Promise<string
         return;
       }
 
-      // Max width for storage images
       const MAX_WIDTH = 800;
       let width = img.width;
       let height = img.height;
@@ -35,14 +35,64 @@ const compressImage = (base64Str: string, quality: number = 0.5): Promise<string
 
       canvas.width = width;
       canvas.height = height;
-      ctx.drawImage(img, 0, 0, width, height);
-      
-      // Convert to JPEG with reduced quality
-      const compressed = canvas.toDataURL('image/jpeg', quality);
-      resolve(compressed);
+      try {
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressed = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressed);
+      } catch (e) {
+        // Fallback for CORS issues
+        resolve(base64Str);
+      }
     };
     img.onerror = () => resolve(base64Str);
   });
+};
+
+/**
+ * Tries to find a real-world image URL for a specific location using Google Search.
+ */
+export const findRealImageOnWeb = async (locationName: string): Promise<{ url: string; source: string; sourceTitle: string } | null> => {
+  try {
+    const prompt = `Find a direct link to a high-quality, public web image of the landmark or location: "${locationName}". 
+    Focus on finding a specific image file (jpg, png, webp).
+    Respond with JSON only. 
+    Include: "imageUrl" (the direct link) and "sourceUrl" (the website it came from).
+    If no direct image link is certain, set imageUrl to null.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            imageUrl: { type: Type.STRING, nullable: true },
+            sourceUrl: { type: Type.STRING, nullable: true },
+            sourceTitle: { type: Type.STRING, nullable: true }
+          }
+        }
+      },
+    });
+
+    const data = JSON.parse(cleanJson(response.text));
+    
+    // Extract grounding chunks for compliance and verification
+    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    const sourceInfo = chunks.find(c => c.web)?.web || { uri: data.sourceUrl, title: data.sourceTitle || locationName };
+
+    if (data.imageUrl && data.imageUrl.startsWith('http')) {
+      return {
+        url: data.imageUrl,
+        source: sourceInfo.uri || data.sourceUrl || '',
+        sourceTitle: sourceInfo.title || data.sourceTitle || 'Web Image'
+      };
+    }
+  } catch (error) {
+    console.warn(`Failed to fetch real image for ${locationName}:`, error);
+  }
+  return null;
 };
 
 export const generateTravelPlan = async (
@@ -60,24 +110,131 @@ export const generateTravelPlan = async (
   const targetLanguage = langMap[language] || "English";
 
   const prompt = `Plan a detailed ${days}-day travel itinerary for ${destination} based on interests: ${interests}.
-  
-  STRICT REQUIREMENT: The itinerary MUST span exactly ${days} days. Do not generate more or fewer days than requested.
-  
-  For each activity (Slide), you MUST provide a "dayNumber" (from 1 to ${days}).
-  Aim for 2-4 key destination points per day.
-  
-  IMPORTANT: All text in the JSON response MUST be in ${targetLanguage}.
-  
-  For each destination point (Slide), you MUST provide:
-  1. CORE LOGISTICS: A time slot (e.g. 09:00 - 11:00), specific transport time, and clear directions (metro line/exit).
-  2. EXPERIENCE: 2-3 must-do items, a "Did you know?" history story/fun fact, and the best photo spot.
-  3. REFUEL: A specific recommended restaurant, a quick fallback option, and a nearby rest stop.
-  4. PRACTICAL: Ticket/reservation info, opening hours, local tips (warnings/advice), and a "Plan B" alternative for bad weather.
-
-  Generate a JSON response following the responseSchema.
+  STRICT REQUIREMENT: The itinerary MUST span exactly ${days} days.
+  For each activity, provide a "dayNumber" (1 to ${days}).
+  All text in the JSON response MUST be in ${targetLanguage}.
   `;
 
+  const slideSchema = {
+    type: Type.OBJECT,
+    properties: {
+      dayNumber: { type: Type.INTEGER },
+      title: { type: Type.STRING },
+      subtitle: { type: Type.STRING },
+      bullets: { type: Type.ARRAY, items: { type: Type.STRING } },
+      location: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          lat: { type: Type.NUMBER },
+          lng: { type: Type.NUMBER },
+          description: { type: Type.STRING }
+        },
+        required: ["name", "lat", "lng"]
+      },
+      logistics: {
+        type: Type.OBJECT,
+        properties: {
+          timeSlot: { type: Type.STRING },
+          transport: { type: Type.STRING },
+          directions: { type: Type.STRING },
+          address: { type: Type.STRING }
+        }
+      },
+      experience: {
+        type: Type.OBJECT,
+        properties: {
+          mustDos: { type: Type.ARRAY, items: { type: Type.STRING } },
+          funFact: { type: Type.STRING },
+          photoSpots: { type: Type.STRING }
+        }
+      },
+      dining: {
+        type: Type.OBJECT,
+        properties: {
+          recommendation: { type: Type.STRING },
+          fallback: { type: Type.STRING },
+          restArea: { type: Type.STRING }
+        }
+      },
+      practical: {
+        type: Type.OBJECT,
+        properties: {
+          tickets: { type: Type.STRING },
+          hours: { type: Type.STRING },
+          tips: { type: Type.STRING },
+          planB: { type: Type.STRING }
+        }
+      }
+    },
+    required: ["title", "bullets", "dayNumber", "location"]
+  };
+
   const responseSchema = {
+    type: Type.OBJECT,
+    properties: {
+      tripTitle: { type: Type.STRING },
+      tripSummary: { type: Type.STRING },
+      slides: {
+        type: Type.ARRAY,
+        items: slideSchema
+      }
+    },
+    required: ["tripTitle", "slides"]
+  };
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: responseSchema,
+      },
+    });
+
+    const text = response.text;
+    if (text) {
+      const parsed = JSON.parse(cleanJson(text)) as TripData;
+      if (parsed.slides) {
+        // Fix for coordinate handling and ensuring Slide typing
+        parsed.slides = parsed.slides.map(s => ({
+          ...s,
+          location: s.location ? {
+            name: s.location.name,
+            lat: Number(s.location.lat),
+            lng: Number(s.location.lng),
+            description: s.location.description
+          } : undefined
+        }) as Slide);
+        parsed.slides.sort((a, b) => a.dayNumber - b.dayNumber);
+      }
+      return parsed;
+    }
+  } catch (error: any) {
+    console.error("Error generating travel plan:", error);
+    throw new Error(error.message || "Failed to generate travel plan.");
+  }
+  return null;
+};
+
+export const translateTripData = async (
+  sourceData: TripData,
+  targetLangCode: string
+): Promise<TripData | null> => {
+  const langMap: Record<string, string> = {
+    en: "English",
+    cn: "Chinese (Simplified)",
+    jp: "Japanese"
+  };
+  const targetLanguage = langMap[targetLangCode] || "English";
+
+  const prompt = `Translate this travel itinerary into ${targetLanguage}. Keep the exact same JSON structure. 
+  Do not change any IDs, coordinates, or numbers. Only translate the text fields.
+  JSON: ${JSON.stringify(sourceData)}`;
+
+  // Enforce schema during translation to avoid missing properties
+  const translationSchema = {
     type: Type.OBJECT,
     properties: {
       tripTitle: { type: Type.STRING },
@@ -87,8 +244,6 @@ export const generateTravelPlan = async (
         items: {
           type: Type.OBJECT,
           properties: {
-            id: { type: Type.STRING },
-            dayNumber: { type: Type.INTEGER, description: "The day of the trip this activity occurs on (1-indexed)" },
             title: { type: Type.STRING },
             subtitle: { type: Type.STRING },
             bullets: { type: Type.ARRAY, items: { type: Type.STRING } },
@@ -96,11 +251,8 @@ export const generateTravelPlan = async (
               type: Type.OBJECT,
               properties: {
                 name: { type: Type.STRING },
-                lat: { type: Type.NUMBER },
-                lng: { type: Type.NUMBER },
                 description: { type: Type.STRING }
-              },
-              required: ["name", "lat", "lng"]
+              }
             },
             logistics: {
               type: Type.OBJECT,
@@ -136,8 +288,7 @@ export const generateTravelPlan = async (
                 planB: { type: Type.STRING }
               }
             }
-          },
-          required: ["title", "bullets", "dayNumber"]
+          }
         }
       }
     },
@@ -146,40 +297,57 @@ export const generateTravelPlan = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: responseSchema,
+        responseSchema: translationSchema
       },
     });
 
     const text = response.text;
     if (text) {
-      const parsed = JSON.parse(cleanJson(text)) as TripData;
-      if (parsed.slides) {
-        parsed.slides.sort((a, b) => a.dayNumber - b.dayNumber);
+      const translated = JSON.parse(cleanJson(text)) as TripData;
+      
+      // Defensive check to prevent "Cannot read properties of undefined (reading 'map')"
+      if (!translated || !Array.isArray(translated.slides)) {
+        console.error("Translation returned invalid structure", translated);
+        return null;
       }
-      return parsed;
+
+      translated.id = sourceData.id;
+      translated.timestamp = sourceData.timestamp;
+      translated.destination = sourceData.destination;
+      translated.days = sourceData.days;
+
+      // Ensure each slide is correctly typed and merges original non-translated data
+      translated.slides = translated.slides.map((s, idx) => {
+        const originalSlide = sourceData.slides[idx];
+        if (!originalSlide) return s as Slide;
+        
+        // Fix: Explicitly reconstruct the slide to satisfy the Slide interface and restore coords/name
+        const updatedSlide: Slide = {
+          ...s,
+          id: originalSlide.id,
+          dayNumber: originalSlide.dayNumber, // Ensure day numbers are preserved
+          imageUrl: originalSlide.imageUrl,
+          imageSource: originalSlide.imageSource,
+          imageSourceTitle: originalSlide.imageSourceTitle,
+          location: originalSlide.location ? {
+            name: s.location?.name || originalSlide.location.name,
+            description: s.location?.description || originalSlide.location.description,
+            lat: Number(originalSlide.location.lat),
+            lng: Number(originalSlide.location.lng)
+          } : undefined
+        };
+        return updatedSlide;
+      });
+      return translated;
     }
-  } catch (error: any) {
-    console.error("Error generating travel plan:", error);
-    throw new Error(error.message || "Failed to generate travel plan.");
+  } catch (error) {
+    console.error("Translation failed:", error);
   }
   return null;
-};
-
-export const fetchActivitiesWithSearch = async (locationName: string): Promise<string[]> => {
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `What are the top 3 activities or hidden gems in ${locationName}? Be extremely concise.`,
-      config: { tools: [{ googleSearch: {} }] },
-    });
-    return response.text ? [response.text] : [];
-  } catch (error) {
-    return [];
-  }
 };
 
 export const generateLocationImage = async (locationName: string, description: string = ''): Promise<string | null> => {
@@ -193,11 +361,13 @@ export const generateLocationImage = async (locationName: string, description: s
     for (const part of response.candidates?.[0]?.content?.parts || []) {
       if (part.inlineData) {
         const rawBase64 = `data:image/png;base64,${part.inlineData.data}`;
-        // Compress immediately to save memory and storage space
         return await compressImage(rawBase64, 0.6);
       }
     }
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message?.includes("429") || error.message?.includes("QUOTA") || error.message?.includes("RATE_LIMIT") || error.message?.includes("RESOURCE_EXHAUSTED")) {
+      throw new Error("RATE_LIMIT");
+    }
     console.error(`Failed to generate image`, error);
   }
   return null;

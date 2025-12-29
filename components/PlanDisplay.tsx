@@ -54,12 +54,19 @@ const PlanDisplay: React.FC<PlanDisplayProps> = ({
             </span>
           </div>
           <h2 className="text-2xl font-outfit font-bold leading-tight drop-shadow-md">{slide.title}</h2>
-          {slide.logistics?.timeSlot && (
-            <div className="flex items-center text-xs mt-1 text-indigo-100 font-medium">
-              <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              {slide.logistics.timeSlot}
-            </div>
-          )}
+          <div className="flex items-center justify-between mt-1">
+            {slide.logistics?.timeSlot && (
+              <div className="flex items-center text-xs text-indigo-100 font-medium">
+                <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                {slide.logistics.timeSlot}
+              </div>
+            )}
+            {slide.imageSource && (
+              <a href={slide.imageSource} target="_blank" rel="noopener noreferrer" className="text-[10px] text-white/50 hover:text-white transition-colors underline decoration-white/30 truncate max-w-[150px]">
+                Source: {slide.imageSourceTitle || 'Web'}
+              </a>
+            )}
+          </div>
         </div>
       </div>
 
