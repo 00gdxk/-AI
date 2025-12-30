@@ -10,90 +10,95 @@ type Language = 'en' | 'cn' | 'jp';
 
 const translations = {
   en: {
-    title: "ZenithTravel AI",
-    tagline: "Where would you like to explore next?",
-    planTitle: "Plan Your Zenith",
+    title: "ZenithTravel",
+    tagline: "Intelligent travel design for the modern explorer",
+    planTitle: "Design Your Escape",
     destination: "Destination",
-    destPlaceholder: "e.g. Patagonia, Iceland, or Tokyo",
-    duration: "Duration",
+    destPlaceholder: "Where's your heart leading?",
+    duration: "Pace",
     days: "Days",
-    interests: "Your Interests",
-    interestsPlaceholder: "e.g. Hiking, photography, street food...",
-    buttonCraft: "Craft Itinerary",
-    itinerary: "Itinerary",
+    interests: "Passions",
+    interestsPlaceholder: "Hidden cafés, brutalist architecture, street food...",
+    buttonCraft: "Curate Itinerary",
+    itinerary: "Explorer",
     gallery: "Gallery",
-    newTrip: "New Trip",
-    savePlan: "Save Plan",
-    saving: "Saving...",
-    planSaved: "Plan Saved",
-    savedTrips: "Saved Journeys",
+    newTrip: "New Plan",
+    savePlan: "Capture",
+    saving: "Syncing...",
+    planSaved: "Captured",
+    savedTrips: "Collection",
     noSaved: "Your future adventures will appear here.",
-    enriching: "Finding real photos",
-    visualizing: "AI visualizing",
-    translating: "Localizing itinerary...",
-    rateLimitWarning: "API rate limit reached. Pausing image generation for 15s...",
-    loading: ["Scouting locations...", "Consulting local experts...", "Mapping your journey...", "Finding the best views...", "Perfecting your itinerary..."]
+    enriching: "Gathering visuals...",
+    visualizing: "Rendering scenes...",
+    translating: "Localizing details...",
+    rateLimitWarning: "Sync Cooling Down...",
+    loading: ["Mapping routes...", "Scouting horizons...", "Consulting local guides...", "Perfecting views..."]
   },
   cn: {
     title: "ZenithTravel 智行",
-    tagline: "您的下一次探索是在哪里？",
-    planTitle: "开启您的巅峰之旅",
+    tagline: "以前瞻智能，绘世界之境",
+    planTitle: "定制您的旷野",
     destination: "目的地",
-    destPlaceholder: "例如：巴塔哥尼亚、冰岛或东京",
-    duration: "行程天数",
+    destPlaceholder: "灵感此刻飘向何方？",
+    duration: "行程步调",
     days: "天",
-    interests: "您的兴趣",
-    interestsPlaceholder: "例如：徒步、摄影、当地美食...",
+    interests: "您的喜好",
+    interestsPlaceholder: "隐世咖啡, 极简建筑, 地道食肆...",
     buttonCraft: "生成行程",
-    itinerary: "行程安排",
-    gallery: "图库",
+    itinerary: "行程助手",
+    gallery: "视觉图库",
     newTrip: "新行程",
-    savePlan: "保存行程",
-    saving: "正在保存...",
-    planSaved: "已保存",
-    savedTrips: "已保存的旅程",
-    noSaved: "您未来的冒险将出现在这里。",
-    enriching: "搜寻实景照片",
-    visualizing: "AI 视觉渲染",
-    translating: "正在翻译行程...",
-    rateLimitWarning: "触发频率限制。图片生成暂停 15 秒...",
-    loading: ["正在寻找地点...", "咨询当地专家...", "规划您的旅程...", "寻找最佳景观...", "正在完善行程..."]
+    savePlan: "收藏",
+    saving: "同步中...",
+    planSaved: "已收藏",
+    savedTrips: "我的合集",
+    noSaved: "收藏的旅途将出现在这里。",
+    enriching: "正在搜集视觉素材...",
+    visualizing: "正在进行AI渲染...",
+    translating: "正在翻译行程详情...",
+    rateLimitWarning: "API 正在冷却中...",
+    loading: ["正在规划线路...", "正在搜寻地道体验...", "咨询当地专家中...", "寻找最佳景观..."]
   },
   jp: {
-    title: "ZenithTravel AI",
-    tagline: "次はどこを探索したいですか？",
-    planTitle: "究極の旅を計画する",
+    title: "ZenithTravel",
+    tagline: "知性のレンズを通して世界を再定義する",
+    planTitle: "旅をデザインする",
     destination: "目的地",
-    destPlaceholder: "例：パタゴニア、アイスランド、東京",
-    duration: "期間",
+    destPlaceholder: "心はどこへ向かっていますか？",
+    duration: "ペース",
     days: "日間",
-    interests: "興味・関心",
-    interestsPlaceholder: "例：ハイキング、写真、グルメ...",
-    buttonCraft: "旅程を作成",
-    itinerary: "旅程",
+    interests: "こだわり",
+    interestsPlaceholder: "隠れ家カフェ, 建築, ローカルフード...",
+    buttonCraft: "プランを作成",
+    itinerary: "プランナー",
     gallery: "ギャラリー",
-    newTrip: "新しい旅",
-    savePlan: "プランを保存",
+    newTrip: "新規作成",
+    savePlan: "保存",
     saving: "保存中...",
     planSaved: "保存済み",
-    savedTrips: "保存済みの旅",
-    noSaved: "将来の冒険がここに表示されます。",
-    enriching: "実景写真を検索中",
-    visualizing: "AIビジュアル生成中",
-    translating: "旅程を翻訳中...",
-    rateLimitWarning: "制限に達しました。画像生成を15秒間停止します...",
-    loading: ["場所をスカウト中...", "専門家に相談中...", "ルートをマッピング中...", "最高の景色を探しています...", "旅程を仕上げています..."]
+    savedTrips: "マイコレクション",
+    noSaved: "保存された冒険がここに表示されます。",
+    enriching: "ビジュアル取得中...",
+    visualizing: "AI描画中...",
+    translating: "翻訳・ローカライズ中...",
+    rateLimitWarning: "API冷却中...",
+    loading: ["ルートをマッピング中...", "秘密のスポットを探索中...", "ガイドをコンサル中...", "絶景を選別中..."]
   }
 };
 
 const STORAGE_KEY = 'zenith_travel_saved_trips';
+const THEME_KEY = 'zenith_travel_dark_mode';
 
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('en');
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem(THEME_KEY);
+    return saved === 'true' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  });
   const t = translations[lang];
 
   const [destination, setDestination] = useState('');
-  const [days, setDays] = useState(3);
+  const [days, setDays] = useState(4);
   const [interests, setInterests] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -112,8 +117,17 @@ const App: React.FC = () => {
   const tripData = tripCache[lang] || null;
   const isCurrentTripSaved = !!tripData && savedTrips.some(trip => trip.id === tripData.id);
 
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem(THEME_KEY, String(darkMode));
+  }, [darkMode]);
+
   const detectLanguage = (text: string): Language | null => {
-    if (!text || text.length < 1) return null;
+    if (!text) return null;
     if (/[\u3040-\u309F\u30A0-\u30FF]/.test(text)) return 'jp';
     if (/[\u4E00-\u9FA5]/.test(text)) return 'cn';
     if (/[a-zA-Z]/.test(text)) return 'en';
@@ -124,9 +138,7 @@ const App: React.FC = () => {
     const value = e.target.value;
     setter(value);
     const detected = detectLanguage(value);
-    if (detected && detected !== lang) {
-      setLang(detected);
-    }
+    if (detected && detected !== lang) setLang(detected);
   };
 
   const saveTripsToLocalStorage = useCallback((trips: TripData[]) => {
@@ -134,7 +146,6 @@ const App: React.FC = () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(trips));
       return trips;
     } catch (e) {
-      console.warn("Storage quota full, keeping current state only.");
       return trips;
     }
   }, []);
@@ -154,18 +165,6 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const prefetchOtherLanguages = async (baseTrip: TripData, baseLang: Language) => {
-    const others = (['en', 'cn', 'jp'] as Language[]).filter(l => l !== baseLang);
-    for (const targetLang of others) {
-      try {
-        const translated = await translateTripData(baseTrip, targetLang);
-        if (translated) {
-          setTripCache(prev => ({ ...prev, [targetLang]: translated }));
-        }
-      } catch (err) { console.error(err); }
-    }
-  };
-
   const handlePlanSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!destination.trim()) return;
@@ -176,7 +175,6 @@ const App: React.FC = () => {
     setCurrentSlideIndex(0);
     setViewMode('itinerary');
     setImageGenProgress({ current: 0, total: 0 });
-    setIsRateLimited(false);
 
     try {
       const result = await generateTravelPlan(destination, days, interests, lang, userLocation);
@@ -184,10 +182,9 @@ const App: React.FC = () => {
         const base: TripData = { ...result, id: crypto.randomUUID(), timestamp: Date.now(), destination, days };
         setTripCache({ [lang]: base });
         populateImages(base);
-        prefetchOtherLanguages(base, lang);
       }
     } catch (err: any) {
-      setError(err.message || 'Error occurred');
+      setError(err.message || 'Error crafting plan');
     } finally {
       setLoading(false);
     }
@@ -210,10 +207,8 @@ const App: React.FC = () => {
           setLang(newLang);
         }
       } catch (err) { 
-        console.error(err);
         setLang(newLang);
-      }
-      finally { setLoading(false); }
+      } finally { setLoading(false); }
     } else {
       setLang(newLang);
     }
@@ -222,41 +217,35 @@ const App: React.FC = () => {
   const populateImages = async (data: TripData) => {
     const total = data.slides.length;
     setImageGenProgress({ current: 0, total });
-    
-    // Phase 1: Try finding real images
     setImagePhase('searching');
+    const results: (string | null)[] = new Array(total).fill(null);
+
     for (let i = 0; i < total; i++) {
       const slide = data.slides[i];
       if (slide.location) {
         const realImg = await findRealImageOnWeb(slide.location.name);
         if (realImg) {
+          results[i] = realImg.url;
           updateAllCaches(i, realImg.url, realImg.source, realImg.sourceTitle);
         }
       }
       setImageGenProgress(prev => ({ ...prev, current: i + 1 }));
     }
 
-    // Phase 2: Fallback to generation for missing images
     setImagePhase('generating');
     setImageGenProgress({ current: 0, total });
     for (let i = 0; i < total; i++) {
-      const slide = data.slides[i];
-      // We check if it's still missing (wasn't found in Phase 1)
-      if (!data.slides[i].imageUrl && slide.location) {
+      if (!results[i] && data.slides[i].location) {
         try {
           setIsRateLimited(false);
-          if (i > 0) await new Promise(r => setTimeout(r, 1500));
-          const img = await generateLocationImage(slide.location.name, slide.location.description);
-          if (img) {
-            updateAllCaches(i, img);
-          }
+          const img = await generateLocationImage(data.slides[i].location!.name, data.slides[i].location!.description);
+          if (img) updateAllCaches(i, img);
           setImageGenProgress(prev => ({ ...prev, current: i + 1 }));
         } catch (err: any) {
-          if (err.message === 'RATE_LIMIT') {
+          if (err.message?.includes('429')) {
             setIsRateLimited(true);
-            await new Promise(r => setTimeout(r, 15000));
-            i--; 
-            continue;
+            await new Promise(r => setTimeout(r, 12000));
+            i--; continue;
           }
         }
       } else {
@@ -280,88 +269,74 @@ const App: React.FC = () => {
     });
   };
 
+  // Fix: Added handleImageUpdate to handle user-uploaded image updates and compression
+  const handleImageUpdate = async (index: number, newImageUrl: string) => {
+    const compressed = await compressUploadedImage(newImageUrl);
+    updateAllCaches(index, compressed, undefined, 'User Uploaded');
+  };
+
   const handleSaveTrip = async () => {
     if (!tripData || isSaving) return;
     setIsSaving(true);
-    await new Promise(r => setTimeout(r, 600));
-    const newList = [tripData, ...savedTrips.filter(t => t.id !== tripData.id)].slice(0, 6);
+    await new Promise(r => setTimeout(r, 700));
+    const newList = [tripData, ...savedTrips.filter(t => t.id !== tripData.id)].slice(0, 15);
     setSavedTrips(saveTripsToLocalStorage(newList));
     setIsSaving(false);
-  };
-
-  const deleteSavedTrip = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const newList = savedTrips.filter(t => t.id !== id);
-    setSavedTrips(saveTripsToLocalStorage(newList));
-  };
-
-  const loadSavedTrip = (trip: TripData) => {
-    setTripCache({ [lang]: trip });
-    setCurrentSlideIndex(0);
-    setViewMode('itinerary');
-    prefetchOtherLanguages(trip, lang);
-  };
-
-  const handleImageUpdate = (index: number, newImageUrl: string) => {
-    compressUploadedImage(newImageUrl).then(compressed => {
-      updateAllCaches(index, compressed);
-    });
   };
 
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   useEffect(() => {
     if (loading) {
-      const interval = setInterval(() => {
-        setLoadingMsgIdx(p => (p + 1) % t.loading.length);
-      }, 2500);
+      const interval = setInterval(() => setLoadingMsgIdx(p => (p + 1) % t.loading.length), 2200);
       return () => clearInterval(interval);
     }
   }, [loading, t.loading.length]);
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-slate-50">
-      <header className={`bg-white border-b border-slate-200 shadow-sm transition-all duration-500 z-50 ${tripData ? 'h-16 flex items-center' : 'h-24 py-6'}`}>
+    <div className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-700 select-none">
+      {/* Dynamic Header */}
+      <header className="h-16 flex-shrink-0 flex items-center bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border-b border-slate-200/60 dark:border-slate-800/60 z-50">
         <div className="max-w-7xl mx-auto px-6 w-full flex justify-between items-center">
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setTripCache({})}>
-             <div className="bg-indigo-600 rounded-lg p-1.5 shadow-md shadow-indigo-200">
-               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-               </svg>
-             </div>
-             <div className="flex flex-col">
-               <h1 className={`font-outfit font-bold text-slate-900 leading-none ${tripData ? 'text-xl' : 'text-2xl'}`}>{t.title}</h1>
-               {imageGenProgress.total > 0 && imageGenProgress.current < imageGenProgress.total && (
-                 <span className="text-[10px] font-bold text-indigo-400 uppercase mt-1 animate-pulse">
-                   {isRateLimited ? t.rateLimitWarning : `${imagePhase === 'searching' ? t.enriching : t.visualizing} (${imageGenProgress.current}/${imageGenProgress.total})`}
-                 </span>
-               )}
-             </div>
+          <div className="flex items-center space-x-3.5 cursor-pointer group" onClick={() => setTripCache({})}>
+            <div className="w-9 h-9 bg-brand-600 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-200/50 dark:shadow-none transition-all group-hover:rotate-6 group-active:scale-95">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </div>
+            <div className="flex flex-col">
+              <h1 className="font-outfit font-bold text-slate-900 dark:text-slate-50 text-xl tracking-tight leading-none">{t.title}</h1>
+              {imageGenProgress.total > 0 && imageGenProgress.current < imageGenProgress.total && (
+                <span className="text-[9px] font-black text-brand-600 dark:text-brand-400 uppercase tracking-widest mt-0.5 animate-pulse">
+                  {isRateLimited ? t.rateLimitWarning : `${imagePhase === 'searching' ? t.enriching : t.visualizing} ${imageGenProgress.current}/${imageGenProgress.total}`}
+                </span>
+              )}
+            </div>
           </div>
           
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center bg-slate-100 rounded-xl p-1 border border-slate-200">
-              {(['en', 'cn', 'jp'] as Language[]).map((l) => (
-                <button
-                  key={l}
-                  onClick={() => handleLanguageSwitch(l)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${lang === l ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                >
+          <div className="flex items-center space-x-3">
+            <div className="hidden sm:flex bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+              {(['en', 'cn', 'jp'] as Language[]).map(l => (
+                <button key={l} onClick={() => handleLanguageSwitch(l)} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${lang === l ? 'bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}>
                   {l.toUpperCase()}
                 </button>
               ))}
             </div>
 
+            <button onClick={() => setDarkMode(!darkMode)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+              {darkMode ? (
+                <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M16.95 16.95l.707.707M7.05 7.05l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" /></svg>
+              ) : (
+                <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+              )}
+            </button>
+
             {tripData && (
-              <div className="flex items-center space-x-4">
-                <nav className="flex items-center bg-slate-100 p-1 rounded-xl">
-                  <button onClick={() => setViewMode('itinerary')} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${viewMode === 'itinerary' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>{t.itinerary}</button>
-                  <button onClick={() => setViewMode('gallery')} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${viewMode === 'gallery' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>{t.gallery}</button>
-                </nav>
-                <button 
-                  onClick={handleSaveTrip} 
-                  disabled={isCurrentTripSaved || isSaving}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center transition-all ${isCurrentTripSaved ? 'bg-emerald-50 text-emerald-600' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 disabled:opacity-70'}`}
-                >
+              <div className="flex items-center space-x-3 ml-3 border-l border-slate-200/60 dark:border-slate-800/60 pl-3">
+                <div className="flex bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                  <button onClick={() => setViewMode('itinerary')} className={`px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all ${viewMode === 'itinerary' ? 'bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>{t.itinerary}</button>
+                  <button onClick={() => setViewMode('gallery')} className={`px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all ${viewMode === 'gallery' ? 'bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>{t.gallery}</button>
+                </div>
+                <button onClick={handleSaveTrip} disabled={isCurrentTripSaved || isSaving} className={`px-5 py-2 rounded-xl text-[11px] font-black tracking-tight transition-all active:scale-95 ${isCurrentTripSaved ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/40' : 'bg-brand-600 text-white hover:bg-brand-700 shadow-lg shadow-brand-600/20 dark:shadow-none disabled:opacity-50'}`}>
                   {isSaving ? t.saving : isCurrentTripSaved ? t.planSaved : t.savePlan}
                 </button>
               </div>
@@ -371,88 +346,135 @@ const App: React.FC = () => {
       </header>
 
       <main className="flex-1 relative overflow-hidden">
+        {/* Landing Page */}
         {!tripData && !loading && (
-          <div className="h-full overflow-y-auto custom-scrollbar">
-            <div className="relative h-[420px] w-full">
-               <img src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&q=80&w=2021" className="w-full h-full object-cover" alt="Travel" />
-               <div className="absolute inset-0 bg-gradient-to-t from-slate-50 via-slate-50/20 to-transparent" />
+          <div className="h-full flex flex-col items-center justify-center p-6 overflow-y-auto custom-scrollbar">
+            <div className="max-w-2xl w-full text-center space-y-4 mb-14 animate-fadeIn">
+              <h2 className="text-6xl font-outfit font-bold text-slate-900 dark:text-slate-50 tracking-tighter leading-tight drop-shadow-sm">{t.planTitle}</h2>
+              <p className="text-slate-500 dark:text-slate-400 font-medium text-xl max-w-lg mx-auto leading-relaxed">{t.tagline}</p>
             </div>
-            <div className="max-w-6xl mx-auto px-6 -mt-64 relative z-10 pb-20 flex flex-col lg:flex-row gap-8">
-              <div className="lg:w-1/2">
-                <div className="bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl p-10 border border-white">
-                  <h2 className="text-4xl font-outfit font-bold text-slate-900 mb-2">{t.planTitle}</h2>
-                  <p className="text-slate-500 mb-8">{t.tagline}</p>
-                  <form onSubmit={handlePlanSubmit} className="space-y-6">
-                    <div className="group">
-                      <label className="block text-xs font-bold text-indigo-600 uppercase tracking-widest mb-2">{t.destination}</label>
-                      <input type="text" placeholder={t.destPlaceholder} value={destination} onChange={(e) => handleInputChange(e, setDestination)} className="w-full px-5 py-4 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-lg shadow-sm" required />
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 w-full max-w-7xl items-start animate-fadeIn" style={{ animationDelay: '0.1s' }}>
+              {/* Main Planning Hub */}
+              <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl shadow-slate-200/50 dark:shadow-none p-10 lg:p-14 border border-slate-100 dark:border-slate-800/80">
+                <form onSubmit={handlePlanSubmit} className="space-y-10">
+                  <div className="space-y-3">
+                    <label className="text-[11px] font-black text-brand-600 dark:text-brand-500 uppercase tracking-widest ml-1">{t.destination}</label>
+                    <input type="text" placeholder={t.destPlaceholder} value={destination} onChange={e => handleInputChange(e, setDestination)} className="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 rounded-3xl px-8 py-5 text-slate-900 dark:text-slate-50 focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition-all text-2xl font-semibold placeholder:text-slate-300 dark:placeholder:text-slate-600" required />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div className="space-y-6">
+                      <div className="flex justify-between items-end px-1">
+                        <label className="text-[11px] font-black text-brand-600 dark:text-brand-500 uppercase tracking-widest">{t.duration}</label>
+                        <span className="text-2xl font-outfit font-bold text-slate-800 dark:text-slate-200">{days} {t.days}</span>
+                      </div>
+                      <input type="range" min="1" max="14" value={days} onChange={e => setDays(parseInt(e.target.value))} className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full appearance-none cursor-pointer accent-brand-600" />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-indigo-600 uppercase tracking-widest mb-3">{t.duration}: {days} {t.days}</label>
-                      <input type="range" min="1" max="14" value={days} onChange={(e) => setDays(parseInt(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                    
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-black text-brand-600 dark:text-brand-500 uppercase tracking-widest ml-1">{t.interests}</label>
+                      <input type="text" placeholder={t.interestsPlaceholder} value={interests} onChange={e => handleInputChange(e, setInterests)} className="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 rounded-3xl px-8 py-4.5 text-slate-900 dark:text-slate-50 focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition-all font-medium placeholder:text-slate-300 dark:placeholder:text-slate-600" />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-indigo-600 uppercase tracking-widest mb-2">{t.interests}</label>
-                      <textarea placeholder={t.interestsPlaceholder} value={interests} onChange={(e) => handleInputChange(e, setInterests)} className="w-full px-5 py-4 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all h-28 resize-none shadow-sm" />
-                    </div>
-                    <button type="submit" disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-5 rounded-2xl shadow-xl shadow-indigo-200 transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 flex items-center justify-center text-lg">
-                      {t.buttonCraft}
-                    </button>
-                  </form>
-                  {error && <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm font-medium">{error}</div>}
-                </div>
+                  </div>
+
+                  <button type="submit" className="w-full bg-brand-600 hover:bg-brand-700 text-white font-black py-6 rounded-[2rem] shadow-xl shadow-brand-500/25 dark:shadow-none transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center text-xl space-x-3">
+                    <span>{t.buttonCraft}</span>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                  </button>
+                </form>
+                {error && <div className="mt-8 p-5 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 rounded-3xl text-red-700 dark:text-red-400 text-sm font-bold animate-fadeIn">{error}</div>}
               </div>
-              <div className="lg:w-1/2">
-                <div className="bg-white/40 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/50 flex-1 min-h-[400px]">
-                  <h3 className="text-2xl font-outfit font-bold text-slate-800 mb-6">{t.savedTrips}</h3>
-                  {savedTrips.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-48 text-slate-400">
-                      <p className="text-center font-medium">{t.noSaved}</p>
+
+              {/* Collections Sidebar */}
+              <div className="lg:col-span-5 bg-slate-100/30 dark:bg-slate-900/20 rounded-[3rem] p-10 border border-slate-200/60 dark:border-slate-800/40 flex flex-col min-h-[460px]">
+                <h3 className="text-xl font-outfit font-bold text-slate-900 dark:text-slate-50 mb-8 flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-xl bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                  </div>
+                  <span>{t.savedTrips}</span>
+                </h3>
+                {savedTrips.length === 0 ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-slate-400/80 text-center px-6 space-y-4">
+                    <div className="w-16 h-16 rounded-3xl bg-slate-50 dark:bg-slate-800/40 flex items-center justify-center">
+                       <svg className="w-8 h-8 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {savedTrips.map((trip) => (
-                        <div key={trip.id} onClick={() => loadSavedTrip(trip)} className="group bg-white rounded-2xl p-4 shadow-sm border border-slate-100 hover:shadow-md transition-all cursor-pointer relative">
-                          <button onClick={(e) => deleteSavedTrip(trip.id, e)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-rose-500">
-                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                          </button>
-                          <h4 className="font-outfit font-bold text-slate-900 line-clamp-1">{trip.tripTitle}</h4>
-                          <p className="text-xs text-slate-500 mt-1">{trip.days} {t.days} · {new Date(trip.timestamp).toLocaleDateString()}</p>
+                    <p className="text-sm font-medium tracking-tight">{t.noSaved}</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4 overflow-y-auto custom-scrollbar pr-2 pb-4">
+                    {savedTrips.map(trip => (
+                      <div key={trip.id} onClick={() => { setTripCache({ [lang]: trip }); setCurrentSlideIndex(0); setViewMode('itinerary'); }} className="group bg-white dark:bg-slate-800 hover:shadow-lg hover:shadow-brand-100/10 dark:hover:shadow-none hover:-translate-y-0.5 p-5 rounded-3xl border border-slate-100/80 dark:border-slate-700/40 transition-all cursor-pointer flex justify-between items-center">
+                        <div className="flex-1">
+                          <h4 className="font-bold text-slate-900 dark:text-slate-50 line-clamp-1 text-base tracking-tight">{trip.tripTitle}</h4>
+                          <p className="text-[10px] text-slate-500 font-black uppercase mt-1.5 tracking-widest flex items-center space-x-2">
+                             <span className="text-brand-600 dark:text-brand-500">{trip.days} {t.days}</span>
+                             <span className="opacity-20">•</span>
+                             <span className="truncate">{trip.destination}</span>
+                          </p>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 dark:bg-slate-700/40 text-slate-300 dark:text-slate-600 group-hover:bg-brand-50 group-hover:text-brand-600 transition-colors">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
 
+        {/* Global Loading View */}
         {loading && (
-          <div className="absolute inset-0 z-[500] bg-white/60 backdrop-blur-md flex flex-col items-center justify-center text-center p-10">
-            <svg className="animate-spin h-12 w-12 text-indigo-600 mb-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            <h3 className="text-xl font-outfit font-bold text-slate-900 mb-2">{tripData ? t.translating : t.loading[loadingMsgIdx]}</h3>
+          <div className="absolute inset-0 z-[100] bg-white/70 dark:bg-slate-950/70 backdrop-blur-2xl flex flex-col items-center justify-center p-12 animate-fadeIn">
+            <div className="relative w-32 h-32 mb-10">
+              <div className="absolute inset-0 rounded-[2.5rem] border-4 border-slate-100 dark:border-slate-800/50"></div>
+              <div className="absolute inset-0 rounded-[2.5rem] border-4 border-t-brand-600 animate-spin" style={{ animationDuration: '0.8s' }}></div>
+              <div className="absolute inset-4 rounded-[1.5rem] border-2 border-slate-100 dark:border-slate-800/50"></div>
+              <div className="absolute inset-4 rounded-[1.5rem] border-2 border-b-brand-400 animate-spin" style={{ animationDuration: '1.2s', animationDirection: 'reverse' }}></div>
+            </div>
+            <div className="text-center space-y-3">
+              <h3 className="text-3xl font-outfit font-bold text-slate-900 dark:text-slate-50 tracking-tighter">{t.loading[loadingMsgIdx]}</h3>
+              <p className="text-slate-500 dark:text-slate-400 font-medium text-lg italic opacity-80">{tripData ? t.translating : "Drafting your ultimate experience..."}</p>
+            </div>
           </div>
         )}
 
+        {/* Core Application View */}
         {tripData && viewMode === 'itinerary' && (
-          <div className="absolute inset-0 p-6 flex flex-col md:flex-row gap-6 animate-fadeIn">
-            <div className="w-full md:w-1/3 lg:w-2/5 h-full z-20">
+          <div className="h-full p-4 lg:p-6 flex flex-col lg:flex-row gap-6 animate-fadeIn">
+            {/* Left Column: Itinerary Details */}
+            <div className="w-full lg:w-96 xl:w-[440px] h-full flex flex-col">
               <PlanDisplay slide={tripData.slides[currentSlideIndex]} currentIndex={currentSlideIndex} totalSlides={tripData.slides.length} onNext={() => setCurrentSlideIndex(p => p + 1)} onPrev={() => setCurrentSlideIndex(p => p - 1)} language={lang} />
             </div>
-            <div className="w-full md:w-2/3 lg:w-3/5 h-full bg-white rounded-[2rem] shadow-2xl relative z-10 overflow-hidden border border-slate-100">
-              <div className="absolute top-6 right-6 z-[400] bg-white/80 backdrop-blur-xl px-5 py-3 rounded-2xl shadow-lg border border-white">
-                <h3 className="font-outfit font-bold text-slate-900 text-lg">{tripData.tripTitle}</h3>
-                <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest">{tripData.days} {t.days} in {tripData.destination}</p>
-              </div>
-              <TravelMap key={tripData.id + lang} slides={tripData.slides} currentSlideIndex={currentSlideIndex} onMarkerClick={(idx) => setCurrentSlideIndex(idx)} />
+            
+            {/* Right Column: Map Visualization */}
+            <div className="flex-1 rounded-[3rem] bg-white dark:bg-slate-900 shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 relative overflow-hidden group">
+               {/* Map Status Bar */}
+               <div className="absolute top-6 left-6 right-6 z-20 flex justify-between items-start pointer-events-none">
+                 <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl px-6 py-4 rounded-3xl border border-white/60 dark:border-slate-700/60 shadow-xl pointer-events-auto flex flex-col">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-50 tracking-tight leading-none">{tripData.tripTitle}</h3>
+                    <div className="flex items-center mt-2 space-x-3">
+                      <div className="flex items-center space-x-1.5">
+                        <div className="w-2 h-2 rounded-full bg-brand-500"></div>
+                        <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{tripData.destination}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-300 dark:text-slate-700 font-bold">•</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest">{tripData.days} {t.days} Journey</span>
+                    </div>
+                 </div>
+               </div>
+               
+               <TravelMap slides={tripData.slides} currentSlideIndex={currentSlideIndex} onMarkerClick={setCurrentSlideIndex} darkMode={darkMode} />
             </div>
           </div>
         )}
 
+        {/* Gallery Mode */}
         {tripData && viewMode === 'gallery' && (
-          <div className="absolute inset-0 z-30 animate-fadeIn overflow-y-auto custom-scrollbar">
-            <TripGallery slides={tripData.slides} onNavigateToSlide={(idx) => { setCurrentSlideIndex(idx); setViewMode('itinerary'); }} onUpdateImage={handleImageUpdate} imageGenProgress={imageGenProgress} />
+          <div className="absolute inset-0 z-10 animate-fadeIn overflow-y-auto custom-scrollbar">
+            <TripGallery slides={tripData.slides} onNavigateToSlide={idx => { setCurrentSlideIndex(idx); setViewMode('itinerary'); }} onUpdateImage={handleImageUpdate} imageGenProgress={imageGenProgress} />
           </div>
         )}
       </main>

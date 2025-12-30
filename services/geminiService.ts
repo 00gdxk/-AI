@@ -2,45 +2,58 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { TripData, Slide } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 const cleanJson = (text: string): string => {
   return text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/, '').trim();
 };
 
 /**
- * Compresses a base64 image string to a smaller JPEG to save localStorage space.
+ * Parses a coordinate value safely. 
+ * Handles cases where the AI returns comma-separated pairs, nested objects, or malformed strings.
+ */
+const parseSafeCoord = (v: any, fallback: number): number => {
+  if (v === null || v === undefined || v === '') return fallback;
+  
+  let val = v;
+  
+  // Case: Model returned an object like { lat: 39, lng: 116 } inside the lat field
+  if (typeof v === 'object' && v !== null) {
+    val = v.lat ?? v.lng ?? v.value ?? v.coord ?? Object.values(v).find(x => typeof x === 'number') ?? fallback;
+  }
+  
+  // Case: Model returned a string like "39.905, 116.397"
+  if (typeof val === 'string' && val.includes(',')) {
+    val = val.split(',')[0];
+  }
+
+  const n = typeof val === 'number' ? val : parseFloat(String(val).replace(/[^\d.-]/g, ''));
+  return (isNaN(n) || !isFinite(n)) ? fallback : n;
+};
+
+/**
+ * Compresses a base64 image string to a smaller JPEG.
  */
 const compressImage = (base64Str: string, quality: number = 0.5): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
-    img.crossOrigin = "Anonymous"; // Crucial for external images
+    img.crossOrigin = "Anonymous";
     img.src = base64Str;
     img.onload = () => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        resolve(base64Str);
-        return;
-      }
-
+      if (!ctx) { resolve(base64Str); return; }
       const MAX_WIDTH = 800;
       let width = img.width;
       let height = img.height;
-
       if (width > MAX_WIDTH) {
         height = Math.round((height * MAX_WIDTH) / width);
         width = MAX_WIDTH;
       }
-
       canvas.width = width;
       canvas.height = height;
       try {
         ctx.drawImage(img, 0, 0, width, height);
-        const compressed = canvas.toDataURL('image/jpeg', quality);
-        resolve(compressed);
+        resolve(canvas.toDataURL('image/jpeg', quality));
       } catch (e) {
-        // Fallback for CORS issues
         resolve(base64Str);
       }
     };
@@ -48,16 +61,13 @@ const compressImage = (base64Str: string, quality: number = 0.5): Promise<string
   });
 };
 
-/**
- * Tries to find a real-world image URL for a specific location using Google Search.
- */
 export const findRealImageOnWeb = async (locationName: string): Promise<{ url: string; source: string; sourceTitle: string } | null> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
-    const prompt = `Find a direct link to a high-quality, public web image of the landmark or location: "${locationName}". 
-    Focus on finding a specific image file (jpg, png, webp).
-    Respond with JSON only. 
-    Include: "imageUrl" (the direct link) and "sourceUrl" (the website it came from).
-    If no direct image link is certain, set imageUrl to null.`;
+    const prompt = `Find a high-quality, direct public image URL for: "${locationName}". 
+    Focus on specific landmark photography.
+    Respond with JSON: {"imageUrl": "string", "sourceUrl": "string", "sourceTitle": "string"}. 
+    If not found, set imageUrl to null.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -77,8 +87,6 @@ export const findRealImageOnWeb = async (locationName: string): Promise<{ url: s
     });
 
     const data = JSON.parse(cleanJson(response.text));
-    
-    // Extract grounding chunks for compliance and verification
     const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
     const sourceInfo = chunks.find(c => c.web)?.web || { uri: data.sourceUrl, title: data.sourceTitle || locationName };
 
@@ -90,7 +98,7 @@ export const findRealImageOnWeb = async (locationName: string): Promise<{ url: s
       };
     }
   } catch (error) {
-    console.warn(`Failed to fetch real image for ${locationName}:`, error);
+    console.warn(`Image search failed for ${locationName}`, error);
   }
   return null;
 };
@@ -102,86 +110,17 @@ export const generateTravelPlan = async (
   language: string,
   location?: { latitude: number; longitude: number }
 ): Promise<TripData | null> => {
-  const langMap: Record<string, string> = {
-    en: "English",
-    cn: "Chinese (Simplified)",
-    jp: "Japanese"
-  };
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const langMap: Record<string, string> = { en: "English", cn: "Chinese (Simplified)", jp: "Japanese" };
   const targetLanguage = langMap[language] || "English";
 
-  const prompt = `Plan a detailed ${days}-day travel itinerary for ${destination} based on interests: ${interests}.
-  STRICT REQUIREMENT: The itinerary MUST span exactly ${days} days.
-  For each activity, provide a "dayNumber" (1 to ${days}).
-  All text in the JSON response MUST be in ${targetLanguage}.
-  `;
-
-  const slideSchema = {
-    type: Type.OBJECT,
-    properties: {
-      dayNumber: { type: Type.INTEGER },
-      title: { type: Type.STRING },
-      subtitle: { type: Type.STRING },
-      bullets: { type: Type.ARRAY, items: { type: Type.STRING } },
-      location: {
-        type: Type.OBJECT,
-        properties: {
-          name: { type: Type.STRING },
-          lat: { type: Type.NUMBER },
-          lng: { type: Type.NUMBER },
-          description: { type: Type.STRING }
-        },
-        required: ["name", "lat", "lng"]
-      },
-      logistics: {
-        type: Type.OBJECT,
-        properties: {
-          timeSlot: { type: Type.STRING },
-          transport: { type: Type.STRING },
-          directions: { type: Type.STRING },
-          address: { type: Type.STRING }
-        }
-      },
-      experience: {
-        type: Type.OBJECT,
-        properties: {
-          mustDos: { type: Type.ARRAY, items: { type: Type.STRING } },
-          funFact: { type: Type.STRING },
-          photoSpots: { type: Type.STRING }
-        }
-      },
-      dining: {
-        type: Type.OBJECT,
-        properties: {
-          recommendation: { type: Type.STRING },
-          fallback: { type: Type.STRING },
-          restArea: { type: Type.STRING }
-        }
-      },
-      practical: {
-        type: Type.OBJECT,
-        properties: {
-          tickets: { type: Type.STRING },
-          hours: { type: Type.STRING },
-          tips: { type: Type.STRING },
-          planB: { type: Type.STRING }
-        }
-      }
-    },
-    required: ["title", "bullets", "dayNumber", "location"]
-  };
-
-  const responseSchema = {
-    type: Type.OBJECT,
-    properties: {
-      tripTitle: { type: Type.STRING },
-      tripSummary: { type: Type.STRING },
-      slides: {
-        type: Type.ARRAY,
-        items: slideSchema
-      }
-    },
-    required: ["tripTitle", "slides"]
-  };
+  const prompt = `Plan a ${days}-day itinerary for ${destination} (Interests: ${interests}).
+  
+  STRICT GEOGRAPHIC ROUTING:
+  1. Neighborhood Clustering: Group all activities for a single day within the same neighborhood.
+  2. Sequential Logic: Order locations North-to-South or Center-to-Outskirts to avoid zig-zagging.
+  
+  Format: JSON only. Language: ${targetLanguage}.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -189,186 +128,159 @@ export const generateTravelPlan = async (
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: responseSchema,
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            tripTitle: { type: Type.STRING },
+            tripSummary: { type: Type.STRING },
+            slides: { 
+              type: Type.ARRAY, 
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  dayNumber: { type: Type.INTEGER },
+                  title: { type: Type.STRING },
+                  subtitle: { type: Type.STRING },
+                  bullets: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  location: {
+                    type: Type.OBJECT,
+                    properties: {
+                      name: { type: Type.STRING },
+                      lat: { type: Type.NUMBER },
+                      lng: { type: Type.NUMBER },
+                      description: { type: Type.STRING }
+                    },
+                    required: ["name", "lat", "lng"]
+                  },
+                  logistics: {
+                    type: Type.OBJECT,
+                    properties: {
+                      timeSlot: { type: Type.STRING },
+                      transport: { type: Type.STRING },
+                      directions: { type: Type.STRING },
+                      address: { type: Type.STRING }
+                    }
+                  },
+                  experience: {
+                    type: Type.OBJECT,
+                    properties: {
+                      mustDos: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      funFact: { type: Type.STRING },
+                      photoSpots: { type: Type.STRING }
+                    }
+                  },
+                  dining: {
+                    type: Type.OBJECT,
+                    properties: {
+                      recommendation: { type: Type.STRING },
+                      fallback: { type: Type.STRING },
+                      restArea: { type: Type.STRING }
+                    }
+                  },
+                  practical: {
+                    type: Type.OBJECT,
+                    properties: {
+                      tickets: { type: Type.STRING },
+                      hours: { type: Type.STRING },
+                      tips: { type: Type.STRING },
+                      planB: { type: Type.STRING }
+                    }
+                  }
+                },
+                required: ["title", "bullets", "dayNumber", "location"]
+              }
+            }
+          },
+          required: ["tripTitle", "slides"]
+        }
       },
     });
 
-    const text = response.text;
-    if (text) {
-      const parsed = JSON.parse(cleanJson(text)) as TripData;
-      if (parsed.slides) {
-        // Fix for coordinate handling and ensuring Slide typing
-        parsed.slides = parsed.slides.map(s => ({
-          ...s,
-          location: s.location ? {
-            name: s.location.name,
-            lat: Number(s.location.lat),
-            lng: Number(s.location.lng),
-            description: s.location.description
-          } : undefined
-        }) as Slide);
-        parsed.slides.sort((a, b) => a.dayNumber - b.dayNumber);
-      }
-      return parsed;
+    const parsed = JSON.parse(cleanJson(response.text)) as TripData;
+    if (parsed.slides) {
+      parsed.slides = parsed.slides.map(s => ({
+        ...s,
+        id: crypto.randomUUID(),
+        location: s.location ? {
+          ...s.location,
+          lat: parseSafeCoord(s.location.lat, 51.505),
+          lng: parseSafeCoord(s.location.lng, -0.09)
+        } : undefined
+      } as Slide));
+      parsed.slides.sort((a, b) => a.dayNumber - b.dayNumber);
     }
+    return parsed;
   } catch (error: any) {
-    console.error("Error generating travel plan:", error);
-    throw new Error(error.message || "Failed to generate travel plan.");
+    throw new Error(error.message || "Plan generation failed.");
   }
-  return null;
 };
 
-export const translateTripData = async (
-  sourceData: TripData,
-  targetLangCode: string
-): Promise<TripData | null> => {
-  const langMap: Record<string, string> = {
-    en: "English",
-    cn: "Chinese (Simplified)",
-    jp: "Japanese"
-  };
+export const translateTripData = async (sourceData: TripData, targetLangCode: string): Promise<TripData | null> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const langMap: Record<string, string> = { en: "English", cn: "Chinese (Simplified)", jp: "Japanese" };
   const targetLanguage = langMap[targetLangCode] || "English";
 
-  const prompt = `Translate this travel itinerary into ${targetLanguage}. Keep the exact same JSON structure. 
-  Do not change any IDs, coordinates, or numbers. Only translate the text fields.
+  const prompt = `Translate this travel itinerary to ${targetLanguage}. Preserve JSON structure and coordinates EXACTLY.
   JSON: ${JSON.stringify(sourceData)}`;
-
-  // Enforce schema during translation to avoid missing properties
-  const translationSchema = {
-    type: Type.OBJECT,
-    properties: {
-      tripTitle: { type: Type.STRING },
-      tripSummary: { type: Type.STRING },
-      slides: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            title: { type: Type.STRING },
-            subtitle: { type: Type.STRING },
-            bullets: { type: Type.ARRAY, items: { type: Type.STRING } },
-            location: {
-              type: Type.OBJECT,
-              properties: {
-                name: { type: Type.STRING },
-                description: { type: Type.STRING }
-              }
-            },
-            logistics: {
-              type: Type.OBJECT,
-              properties: {
-                timeSlot: { type: Type.STRING },
-                transport: { type: Type.STRING },
-                directions: { type: Type.STRING },
-                address: { type: Type.STRING }
-              }
-            },
-            experience: {
-              type: Type.OBJECT,
-              properties: {
-                mustDos: { type: Type.ARRAY, items: { type: Type.STRING } },
-                funFact: { type: Type.STRING },
-                photoSpots: { type: Type.STRING }
-              }
-            },
-            dining: {
-              type: Type.OBJECT,
-              properties: {
-                recommendation: { type: Type.STRING },
-                fallback: { type: Type.STRING },
-                restArea: { type: Type.STRING }
-              }
-            },
-            practical: {
-              type: Type.OBJECT,
-              properties: {
-                tickets: { type: Type.STRING },
-                hours: { type: Type.STRING },
-                tips: { type: Type.STRING },
-                planB: { type: Type.STRING }
-              }
-            }
-          }
-        }
-      }
-    },
-    required: ["tripTitle", "slides"]
-  };
 
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: translationSchema
-      },
+      config: { responseMimeType: "application/json" }
     });
 
-    const text = response.text;
-    if (text) {
-      const translated = JSON.parse(cleanJson(text)) as TripData;
-      
-      // Defensive check to prevent "Cannot read properties of undefined (reading 'map')"
-      if (!translated || !Array.isArray(translated.slides)) {
-        console.error("Translation returned invalid structure", translated);
-        return null;
-      }
+    const translated = JSON.parse(cleanJson(response.text)) as TripData;
+    translated.id = sourceData.id;
+    translated.timestamp = sourceData.timestamp;
+    translated.destination = sourceData.destination;
+    translated.days = sourceData.days;
 
-      translated.id = sourceData.id;
-      translated.timestamp = sourceData.timestamp;
-      translated.destination = sourceData.destination;
-      translated.days = sourceData.days;
-
-      // Ensure each slide is correctly typed and merges original non-translated data
-      translated.slides = translated.slides.map((s, idx) => {
-        const originalSlide = sourceData.slides[idx];
-        if (!originalSlide) return s as Slide;
-        
-        // Fix: Explicitly reconstruct the slide to satisfy the Slide interface and restore coords/name
-        const updatedSlide: Slide = {
-          ...s,
-          id: originalSlide.id,
-          dayNumber: originalSlide.dayNumber, // Ensure day numbers are preserved
-          imageUrl: originalSlide.imageUrl,
-          imageSource: originalSlide.imageSource,
-          imageSourceTitle: originalSlide.imageSourceTitle,
-          location: originalSlide.location ? {
-            name: s.location?.name || originalSlide.location.name,
-            description: s.location?.description || originalSlide.location.description,
-            lat: Number(originalSlide.location.lat),
-            lng: Number(originalSlide.location.lng)
-          } : undefined
-        };
-        return updatedSlide;
-      });
-      return translated;
-    }
+    translated.slides = translated.slides.map((s, idx) => {
+      const orig = sourceData.slides[idx];
+      if (!orig) return s as Slide;
+      return {
+        ...s,
+        id: orig.id,
+        dayNumber: orig.dayNumber,
+        imageUrl: orig.imageUrl,
+        imageSource: orig.imageSource,
+        imageSourceTitle: orig.imageSourceTitle,
+        location: orig.location ? {
+          ...s.location,
+          name: s.location?.name || orig.location.name,
+          lat: parseSafeCoord(orig.location.lat, 51.505),
+          lng: parseSafeCoord(orig.location.lng, -0.09)
+        } : undefined
+      } as Slide;
+    });
+    return translated;
   } catch (error) {
-    console.error("Translation failed:", error);
+    return null;
   }
-  return null;
 };
 
 export const generateLocationImage = async (locationName: string, description: string = ''): Promise<string | null> => {
-  const prompt = `Photorealistic travel image of ${locationName}. ${description}. Scenic, cinematic lighting, 4k.`;
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const prompt = `Hyper-realistic travel photo of ${locationName}. ${description}. 8k, professional photography. Direct front view, no text or watermarks.`;
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: { parts: [{ text: prompt }] },
       config: { imageConfig: { aspectRatio: "16:9" } }
     });
-    for (const part of response.candidates?.[0]?.content?.parts || []) {
+    
+    const parts = response.candidates?.[0]?.content?.parts || [];
+    for (const part of parts) {
       if (part.inlineData) {
-        const rawBase64 = `data:image/png;base64,${part.inlineData.data}`;
-        return await compressImage(rawBase64, 0.6);
+        return await compressImage(`data:image/png;base64,${part.inlineData.data}`, 0.6);
       }
     }
-  } catch (error: any) {
-    if (error.message?.includes("429") || error.message?.includes("QUOTA") || error.message?.includes("RATE_LIMIT") || error.message?.includes("RESOURCE_EXHAUSTED")) {
-      throw new Error("RATE_LIMIT");
-    }
-    console.error(`Failed to generate image`, error);
+    
+    // Fallback search if generation didn't yield an image part
+    console.warn("No inlineData found in image generation response parts.");
+  } catch (error) {
+    console.error(`Image generation failed for ${locationName}:`, error);
   }
   return null;
 };
