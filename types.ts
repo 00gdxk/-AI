@@ -1,4 +1,3 @@
-
 export interface LocationData {
   name: string;
   lat: number;
@@ -48,6 +47,7 @@ export interface TripData {
   tripTitle: string;
   tripSummary: string;
   slides: Slide[];
+  groundingSources?: { title: string; uri: string }[];
 }
 
 export interface TravelPlace {

@@ -11,21 +11,35 @@ interface TravelMapProps {
   darkMode?: boolean;
 }
 
-const isVal = (v: any): boolean => {
+/**
+ * Validates if a value is a finite number.
+ */
+const isFiniteNumber = (v: any): boolean => {
   if (v === null || v === undefined || v === '') return false;
   const num = typeof v === 'number' ? v : parseFloat(String(v));
   return !isNaN(num) && isFinite(num);
 };
 
+/**
+ * Validates a LatLng object or array.
+ */
+const isValidCoordinate = (lat: any, lng: any): boolean => {
+  return isFiniteNumber(lat) && isFiniteNumber(lng);
+};
+
+/**
+ * Converts coordinates to a Leaflet LatLng object, returning null if invalid.
+ */
 const toLatLng = (lat: any, lng: any): L.LatLng | null => {
-  if (!isVal(lat) || !isVal(lng)) return null;
-  const nLat = parseFloat(String(lat));
-  const nLng = parseFloat(String(lng));
+  if (!isValidCoordinate(lat, lng)) return null;
   try {
+    const nLat = parseFloat(String(lat));
+    const nLng = parseFloat(String(lng));
     const l = L.latLng(nLat, nLng);
-    if (isVal(l.lat) && isVal(l.lng)) return l;
+    // Double check the internal properties just in case
+    if (isFinite(l.lat) && isFinite(l.lng)) return l;
   } catch (e) {
-    console.warn("Invalid coordinates:", lat, lng);
+    console.warn("Leaflet LatLng construction failed:", e);
   }
   return null;
 };
@@ -57,29 +71,32 @@ const createMarkerIcon = (isActive: boolean, isDark: boolean) => {
   });
 };
 
+/**
+ * Handles map movement when the center coordinate changes.
+ */
 const MapUpdater: React.FC<{ center: L.LatLng | null; zoom: number }> = ({ center, zoom }) => {
   const map = useMap();
+  
   useEffect(() => {
-    if (center && isVal(center.lat) && isVal(center.lng)) {
-      const lat = parseFloat(String(center.lat));
-      const lng = parseFloat(String(center.lng));
-      if (!isNaN(lat) && !isNaN(lng)) {
-        try {
-          map.flyTo([lat, lng], zoom, { duration: 1.8 });
-        } catch (e) {
-          console.error("FlyTo failed:", e);
-        }
+    if (center && isFiniteNumber(center.lat) && isFiniteNumber(center.lng)) {
+      try {
+        map.flyTo(center, zoom, { duration: 1.8 });
+      } catch (e) {
+        console.error("FlyTo failed:", e);
       }
     }
   }, [center, zoom, map]);
+  
   return null;
 };
 
 const TravelMap: React.FC<TravelMapProps> = ({ slides, currentSlideIndex, onMarkerClick, darkMode = false }) => {
+  // Pre-validate all coordinates
   const validLatLngs = useMemo(() => {
     return slides.map(s => s.location ? toLatLng(s.location.lat, s.location.lng) : null);
   }, [slides]);
 
+  // Filter slides to only those with truly valid coordinates
   const validSlidesWithCoords = useMemo(() => {
     return slides
       .map((s, idx) => ({ slide: s, latlng: validLatLngs[idx], originalIdx: idx }))
@@ -87,14 +104,23 @@ const TravelMap: React.FC<TravelMapProps> = ({ slides, currentSlideIndex, onMark
       .sort((a, b) => a.slide.dayNumber - b.slide.dayNumber);
   }, [slides, validLatLngs]);
 
+  // Determine current active center or fallback to default
+  const DEFAULT_CENTER = L.latLng(51.505, -0.09);
+  
   const currentSlideLatLng = validLatLngs[currentSlideIndex];
+  
   const baseCenter = useMemo(() => {
-    return validSlidesWithCoords.length > 0 ? validSlidesWithCoords[0].latlng : L.latLng(51.505, -0.09);
+    if (validSlidesWithCoords.length > 0) {
+      const first = validSlidesWithCoords[0].latlng;
+      if (first && isFiniteNumber(first.lat) && isFiniteNumber(first.lng)) return first;
+    }
+    return DEFAULT_CENTER;
   }, [validSlidesWithCoords]);
 
   const activeCenter = currentSlideLatLng || baseCenter;
   const activeZoom = currentSlideLatLng ? 15 : 11;
 
+  // Path for polyline
   const pathPositions = useMemo(() => 
     validSlidesWithCoords.map(item => item.latlng as L.LatLng),
   [validSlidesWithCoords]);
@@ -108,7 +134,7 @@ const TravelMap: React.FC<TravelMapProps> = ({ slides, currentSlideIndex, onMark
   return (
     <div className="h-full w-full rounded-2xl overflow-hidden shadow-inner border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 transition-colors duration-500">
       <MapContainer 
-        center={baseCenter || L.latLng(51.505, -0.09)} 
+        center={baseCenter} 
         zoom={11} 
         style={{ height: '100%', width: '100%' }} 
         zoomControl={false}
@@ -131,19 +157,48 @@ const TravelMap: React.FC<TravelMapProps> = ({ slides, currentSlideIndex, onMark
             eventHandlers={{ click: () => onMarkerClick(originalIdx) }}
           >
             <Popup closeButton={false} className={darkMode ? 'dark-popup' : ''}>
-              <div className="font-outfit p-1 min-w-[120px] dark:text-slate-200">
-                <h3 className="font-bold text-slate-900 dark:text-white text-sm">{slide.title}</h3>
-                <p className="text-slate-500 dark:text-slate-400 text-[10px]">{slide.location?.name}</p>
+              <div className="font-outfit p-1 min-w-[160px] max-w-[240px]">
+                {slide.imageUrl && (
+                  <div className="w-full h-24 mb-2 overflow-hidden rounded-xl border border-slate-100 dark:border-slate-700">
+                    <img 
+                      src={slide.imageUrl} 
+                      alt={slide.title} 
+                      className="w-full h-full object-cover"
+                      onLoad={(e) => {
+                        // Leaflet popups sometimes need a nudge to update their size if an image loads after opening
+                        const target = e.target as HTMLImageElement;
+                        const popup = target.closest('.leaflet-popup');
+                        if (popup) {
+                          const contentWrapper = popup.querySelector('.leaflet-popup-content-wrapper');
+                          contentWrapper?.dispatchEvent(new Event('resize'));
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm line-clamp-1 leading-tight">{slide.title}</h3>
+                <p className="text-slate-500 dark:text-slate-400 text-[10px] mb-1 font-semibold uppercase tracking-wider">{slide.location?.name}</p>
+                {slide.location?.description && (
+                  <p className="text-slate-600 dark:text-slate-300 text-[11px] line-clamp-2 leading-snug border-t border-slate-50 dark:border-slate-800 mt-1.5 pt-1.5">
+                    {slide.location.description}
+                  </p>
+                )}
+                <div className="mt-2 flex items-center justify-between">
+                   <span className="text-[9px] font-black text-brand-600 dark:text-brand-400 uppercase tracking-widest">Day {slide.dayNumber}</span>
+                </div>
               </div>
             </Popup>
           </Marker>
         ))}
       </MapContainer>
       <style>{`
+        .leaflet-popup-content {
+          margin: 12px !important;
+        }
         .dark-popup .leaflet-popup-content-wrapper {
           background: #1e293b;
           color: white;
-          border: 1px solid #334155;
+          border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .dark-popup .leaflet-popup-tip {
           background: #1e293b;

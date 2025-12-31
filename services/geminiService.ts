@@ -7,31 +7,34 @@ const cleanJson = (text: string): string => {
 };
 
 /**
- * Parses a coordinate value safely. 
- * Handles cases where the AI returns comma-separated pairs, nested objects, or malformed strings.
+ * Enhanced coordinate parser that handles various edge cases like strings with units,
+ * objects, or comma-separated values often returned by LLMs.
  */
 const parseSafeCoord = (v: any, fallback: number): number => {
   if (v === null || v === undefined || v === '') return fallback;
   
-  let val = v;
+  let val: any = v;
   
-  // Case: Model returned an object like { lat: 39, lng: 116 } inside the lat field
+  // If the AI returns an object like { lat: 12.3 } or { value: 12.3 }
   if (typeof v === 'object' && v !== null) {
     val = v.lat ?? v.lng ?? v.value ?? v.coord ?? Object.values(v).find(x => typeof x === 'number') ?? fallback;
   }
   
-  // Case: Model returned a string like "39.905, 116.397"
-  if (typeof val === 'string' && val.includes(',')) {
-    val = val.split(',')[0];
+  // Convert to string and clean up common LLM artifacts (units, extra text)
+  let strVal = String(val).trim();
+  
+  // Handle comma separated strings if the AI packed both into one field
+  if (strVal.includes(',')) {
+    strVal = strVal.split(',')[0].trim();
   }
-
-  const n = typeof val === 'number' ? val : parseFloat(String(val).replace(/[^\d.-]/g, ''));
+  
+  // Remove anything that isn't a digit, decimal point, or minus sign
+  const cleaned = strVal.replace(/[^\d.-]/g, '');
+  const n = parseFloat(cleaned);
+  
   return (isNaN(n) || !isFinite(n)) ? fallback : n;
 };
 
-/**
- * Compresses a base64 image string to a smaller JPEG.
- */
 const compressImage = (base64Str: string, quality: number = 0.5): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
@@ -114,19 +117,21 @@ export const generateTravelPlan = async (
   const langMap: Record<string, string> = { en: "English", cn: "Chinese (Simplified)", jp: "Japanese" };
   const targetLanguage = langMap[language] || "English";
 
-  const prompt = `Plan a ${days}-day itinerary for ${destination} (Interests: ${interests}).
+  const prompt = `Research and plan a ${days}-day itinerary for ${destination} using current web data. 
+  Interests: ${interests}.
   
   STRICT GEOGRAPHIC ROUTING:
-  1. Neighborhood Clustering: Group all activities for a single day within the same neighborhood.
-  2. Sequential Logic: Order locations North-to-South or Center-to-Outskirts to avoid zig-zagging.
+  1. Neighborhood Clustering: Group activities within the same neighborhood daily.
+  2. Sequential Logic: Logical path North-to-South or Center-to-Outskirts.
   
   Format: JSON only. Language: ${targetLanguage}.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
+        tools: [{ googleSearch: {} }],
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -197,18 +202,35 @@ export const generateTravelPlan = async (
     });
 
     const parsed = JSON.parse(cleanJson(response.text)) as TripData;
+    
+    // Extract grounding sources
+    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    const sources = chunks
+      .filter(c => c.web)
+      .map(c => ({ title: c.web!.title || 'Source', uri: c.web!.uri || '' }))
+      .filter(s => s.uri !== '');
+      
     if (parsed.slides) {
-      parsed.slides = parsed.slides.map(s => ({
-        ...s,
-        id: crypto.randomUUID(),
-        location: s.location ? {
-          ...s.location,
-          lat: parseSafeCoord(s.location.lat, 51.505),
-          lng: parseSafeCoord(s.location.lng, -0.09)
-        } : undefined
-      } as Slide));
+      parsed.slides = parsed.slides.map(s => {
+        // Fallback coordinates based on destination name if parsing fails
+        // Default to London (51.5, -0.09) as a global fallback
+        const lat = parseSafeCoord(s.location?.lat, 51.505);
+        const lng = parseSafeCoord(s.location?.lng, -0.09);
+        
+        return {
+          ...s,
+          id: crypto.randomUUID(),
+          location: s.location ? {
+            ...s.location,
+            lat,
+            lng
+          } : undefined
+        } as Slide;
+      });
       parsed.slides.sort((a, b) => a.dayNumber - b.dayNumber);
     }
+    
+    parsed.groundingSources = sources;
     return parsed;
   } catch (error: any) {
     throw new Error(error.message || "Plan generation failed.");
@@ -235,6 +257,7 @@ export const translateTripData = async (sourceData: TripData, targetLangCode: st
     translated.timestamp = sourceData.timestamp;
     translated.destination = sourceData.destination;
     translated.days = sourceData.days;
+    translated.groundingSources = sourceData.groundingSources;
 
     translated.slides = translated.slides.map((s, idx) => {
       const orig = sourceData.slides[idx];
@@ -276,9 +299,6 @@ export const generateLocationImage = async (locationName: string, description: s
         return await compressImage(`data:image/png;base64,${part.inlineData.data}`, 0.6);
       }
     }
-    
-    // Fallback search if generation didn't yield an image part
-    console.warn("No inlineData found in image generation response parts.");
   } catch (error) {
     console.error(`Image generation failed for ${locationName}:`, error);
   }

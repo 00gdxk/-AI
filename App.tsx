@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { generateTravelPlan, generateLocationImage, compressUploadedImage, translateTripData, findRealImageOnWeb } from './services/geminiService';
 import { TripData } from './types';
@@ -32,7 +31,10 @@ const translations = {
     visualizing: "Rendering scenes...",
     translating: "Localizing details...",
     rateLimitWarning: "Sync Cooling Down...",
-    loading: ["Mapping routes...", "Scouting horizons...", "Consulting local guides...", "Perfecting views..."]
+    loading: ["Mapping routes...", "Scouting horizons...", "Consulting local guides...", "Perfecting views..."],
+    mapView: "Map View",
+    listView: "Itinerary",
+    sources: "Grounding Sources"
   },
   cn: {
     title: "ZenithTravel 智行",
@@ -57,7 +59,10 @@ const translations = {
     visualizing: "正在进行AI渲染...",
     translating: "正在翻译行程详情...",
     rateLimitWarning: "API 正在冷却中...",
-    loading: ["正在规划线路...", "正在搜寻地道体验...", "咨询当地专家中...", "寻找最佳景观..."]
+    loading: ["正在规划线路...", "正在搜寻地道体验...", "咨询当地专家中...", "寻找最佳景观..."],
+    mapView: "地图模式",
+    listView: "行程详情",
+    sources: "数据来源"
   },
   jp: {
     title: "ZenithTravel",
@@ -82,7 +87,10 @@ const translations = {
     visualizing: "AI描画中...",
     translating: "翻訳・ローカライズ中...",
     rateLimitWarning: "API冷却中...",
-    loading: ["ルートをマッピング中...", "秘密のスポットを探索中...", "ガイドをコンサル中...", "絶景を選別中..."]
+    loading: ["ルートをマッピング中...", "秘密のスポットを探索中...", "ガイドをコンサル中...", "絶景を選別中..."],
+    mapView: "マップ",
+    listView: "プラン",
+    sources: "出典"
   }
 };
 
@@ -113,6 +121,7 @@ const App: React.FC = () => {
   
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [viewMode, setViewMode] = useState<'itinerary' | 'gallery'>('itinerary');
+  const [itinerarySubView, setItinerarySubView] = useState<'details' | 'map'>('details');
 
   const tripData = tripCache[lang] || null;
   const isCurrentTripSaved = !!tripData && savedTrips.some(trip => trip.id === tripData.id);
@@ -174,6 +183,7 @@ const App: React.FC = () => {
     setTripCache({});
     setCurrentSlideIndex(0);
     setViewMode('itinerary');
+    setItinerarySubView('details');
     setImageGenProgress({ current: 0, total: 0 });
 
     try {
@@ -184,7 +194,7 @@ const App: React.FC = () => {
         populateImages(base);
       }
     } catch (err: any) {
-      setError(err.message || 'Error crafting plan');
+      setError(err.message || "Error crafting plan");
     } finally {
       setLoading(false);
     }
@@ -269,7 +279,6 @@ const App: React.FC = () => {
     });
   };
 
-  // Fix: Added handleImageUpdate to handle user-uploaded image updates and compression
   const handleImageUpdate = async (index: number, newImageUrl: string) => {
     const compressed = await compressUploadedImage(newImageUrl);
     updateAllCaches(index, compressed, undefined, 'User Uploaded');
@@ -293,50 +302,52 @@ const App: React.FC = () => {
   }, [loading, t.loading.length]);
 
   return (
-    <div className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-700 select-none">
-      {/* Dynamic Header */}
-      <header className="h-16 flex-shrink-0 flex items-center bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border-b border-slate-200/60 dark:border-slate-800/60 z-50">
-        <div className="max-w-7xl mx-auto px-6 w-full flex justify-between items-center">
-          <div className="flex items-center space-x-3.5 cursor-pointer group" onClick={() => setTripCache({})}>
-            <div className="w-9 h-9 bg-brand-600 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-200/50 dark:shadow-none transition-all group-hover:rotate-6 group-active:scale-95">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-700 select-none overflow-hidden">
+      {/* Header */}
+      <header className="h-16 flex-shrink-0 flex items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border-b border-slate-200/60 dark:border-slate-800/60 z-50 px-4 md:px-6">
+        <div className="max-w-7xl mx-auto w-full flex justify-between items-center">
+          <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => setTripCache({})}>
+            <div className="w-8 h-8 md:w-9 md:h-9 bg-brand-600 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-brand-200/50 dark:shadow-none">
+              <svg className="w-4 h-4 md:w-5 md:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
               </svg>
             </div>
-            <div className="flex flex-col">
-              <h1 className="font-outfit font-bold text-slate-900 dark:text-slate-50 text-xl tracking-tight leading-none">{t.title}</h1>
+            <div className="flex flex-col hidden sm:flex">
+              <h1 className="font-outfit font-bold text-slate-900 dark:text-slate-50 text-base md:text-xl tracking-tight leading-none">{t.title}</h1>
               {imageGenProgress.total > 0 && imageGenProgress.current < imageGenProgress.total && (
-                <span className="text-[9px] font-black text-brand-600 dark:text-brand-400 uppercase tracking-widest mt-0.5 animate-pulse">
+                <span className="text-[8px] font-black text-brand-600 dark:text-brand-400 uppercase tracking-widest mt-0.5 animate-pulse">
                   {isRateLimited ? t.rateLimitWarning : `${imagePhase === 'searching' ? t.enriching : t.visualizing} ${imageGenProgress.current}/${imageGenProgress.total}`}
                 </span>
               )}
             </div>
           </div>
           
-          <div className="flex items-center space-x-3">
-            <div className="hidden sm:flex bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
-              {(['en', 'cn', 'jp'] as Language[]).map(l => (
-                <button key={l} onClick={() => handleLanguageSwitch(l)} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${lang === l ? 'bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}>
-                  {l.toUpperCase()}
-                </button>
-              ))}
-            </div>
+          <div className="flex items-center space-x-2 md:space-x-3">
+            {!tripData && (
+              <div className="flex bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                {(['en', 'cn', 'jp'] as Language[]).map(l => (
+                  <button key={l} onClick={() => handleLanguageSwitch(l)} className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${lang === l ? 'bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+                    {l.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            )}
 
-            <button onClick={() => setDarkMode(!darkMode)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+            <button onClick={() => setDarkMode(!darkMode)} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
               {darkMode ? (
-                <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M16.95 16.95l.707.707M7.05 7.05l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" /></svg>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M16.95 16.95l.707.707M7.05 7.05l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" /></svg>
               ) : (
-                <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
               )}
             </button>
 
             {tripData && (
-              <div className="flex items-center space-x-3 ml-3 border-l border-slate-200/60 dark:border-slate-800/60 pl-3">
-                <div className="flex bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
-                  <button onClick={() => setViewMode('itinerary')} className={`px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all ${viewMode === 'itinerary' ? 'bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>{t.itinerary}</button>
-                  <button onClick={() => setViewMode('gallery')} className={`px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all ${viewMode === 'gallery' ? 'bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>{t.gallery}</button>
+              <div className="flex items-center space-x-2 md:space-x-3 ml-1 sm:ml-3 border-l border-slate-200/60 dark:border-slate-800/60 pl-2 sm:pl-3">
+                <div className="hidden md:flex bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                  <button onClick={() => setViewMode('itinerary')} className={`px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all ${viewMode === 'itinerary' ? 'bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm' : 'text-slate-500'}`}>{t.itinerary}</button>
+                  <button onClick={() => setViewMode('gallery')} className={`px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all ${viewMode === 'gallery' ? 'bg-white dark:bg-slate-700 text-brand-700 dark:text-brand-300 shadow-sm' : 'text-slate-500'}`}>{t.gallery}</button>
                 </div>
-                <button onClick={handleSaveTrip} disabled={isCurrentTripSaved || isSaving} className={`px-5 py-2 rounded-xl text-[11px] font-black tracking-tight transition-all active:scale-95 ${isCurrentTripSaved ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/40' : 'bg-brand-600 text-white hover:bg-brand-700 shadow-lg shadow-brand-600/20 dark:shadow-none disabled:opacity-50'}`}>
+                <button onClick={handleSaveTrip} disabled={isCurrentTripSaved || isSaving} className={`px-3 sm:px-5 py-2 rounded-xl text-[10px] md:text-[11px] font-black tracking-tight transition-all ${isCurrentTripSaved ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-brand-600 text-white shadow-lg shadow-brand-600/20'}`}>
                   {isSaving ? t.saving : isCurrentTripSaved ? t.planSaved : t.savePlan}
                 </button>
               </div>
@@ -345,76 +356,67 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 relative overflow-hidden">
+      <main className="flex-1 relative overflow-hidden flex flex-col">
         {/* Landing Page */}
         {!tripData && !loading && (
-          <div className="h-full flex flex-col items-center justify-center p-6 overflow-y-auto custom-scrollbar">
-            <div className="max-w-2xl w-full text-center space-y-4 mb-14 animate-fadeIn">
-              <h2 className="text-6xl font-outfit font-bold text-slate-900 dark:text-slate-50 tracking-tighter leading-tight drop-shadow-sm">{t.planTitle}</h2>
-              <p className="text-slate-500 dark:text-slate-400 font-medium text-xl max-w-lg mx-auto leading-relaxed">{t.tagline}</p>
+          <div className="h-full flex flex-col items-center justify-center p-4 md:p-6 overflow-y-auto custom-scrollbar">
+            <div className="max-w-2xl w-full text-center space-y-4 mb-8 md:mb-14 animate-fadeIn">
+              <h2 className="text-4xl md:text-6xl font-outfit font-bold text-slate-900 dark:text-slate-50 tracking-tighter leading-tight">{t.planTitle}</h2>
+              <p className="text-slate-500 dark:text-slate-400 font-medium text-lg md:text-xl max-w-lg mx-auto leading-relaxed">{t.tagline}</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 w-full max-w-7xl items-start animate-fadeIn" style={{ animationDelay: '0.1s' }}>
-              {/* Main Planning Hub */}
-              <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl shadow-slate-200/50 dark:shadow-none p-10 lg:p-14 border border-slate-100 dark:border-slate-800/80">
-                <form onSubmit={handlePlanSubmit} className="space-y-10">
-                  <div className="space-y-3">
-                    <label className="text-[11px] font-black text-brand-600 dark:text-brand-500 uppercase tracking-widest ml-1">{t.destination}</label>
-                    <input type="text" placeholder={t.destPlaceholder} value={destination} onChange={e => handleInputChange(e, setDestination)} className="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 rounded-3xl px-8 py-5 text-slate-900 dark:text-slate-50 focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition-all text-2xl font-semibold placeholder:text-slate-300 dark:placeholder:text-slate-600" required />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-10 w-full max-w-7xl items-start animate-fadeIn">
+              <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-[2rem] md:rounded-[3rem] shadow-xl md:shadow-2xl p-6 md:p-14 border border-slate-100 dark:border-slate-800/80">
+                <form onSubmit={handlePlanSubmit} className="space-y-6 md:space-y-10">
+                  <div className="space-y-2 md:space-y-3">
+                    <label className="text-[10px] md:text-[11px] font-black text-brand-600 dark:text-brand-500 uppercase tracking-widest ml-1">{t.destination}</label>
+                    <input type="text" placeholder={t.destPlaceholder} value={destination} onChange={e => handleInputChange(e, setDestination)} className="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 rounded-2xl md:rounded-3xl px-6 md:px-8 py-4 md:py-5 text-slate-900 dark:text-slate-50 focus:border-brand-500 outline-none text-xl md:text-2xl font-semibold placeholder:text-slate-300" required />
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                    <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+                    <div className="space-y-4 md:space-y-6">
                       <div className="flex justify-between items-end px-1">
-                        <label className="text-[11px] font-black text-brand-600 dark:text-brand-500 uppercase tracking-widest">{t.duration}</label>
-                        <span className="text-2xl font-outfit font-bold text-slate-800 dark:text-slate-200">{days} {t.days}</span>
+                        <label className="text-[10px] md:text-[11px] font-black text-brand-600 dark:text-brand-500 uppercase tracking-widest">{t.duration}</label>
+                        <span className="text-xl md:text-2xl font-outfit font-bold text-slate-800 dark:text-slate-200">{days} {t.days}</span>
                       </div>
                       <input type="range" min="1" max="14" value={days} onChange={e => setDays(parseInt(e.target.value))} className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full appearance-none cursor-pointer accent-brand-600" />
                     </div>
                     
-                    <div className="space-y-3">
-                      <label className="text-[11px] font-black text-brand-600 dark:text-brand-500 uppercase tracking-widest ml-1">{t.interests}</label>
-                      <input type="text" placeholder={t.interestsPlaceholder} value={interests} onChange={e => handleInputChange(e, setInterests)} className="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 rounded-3xl px-8 py-4.5 text-slate-900 dark:text-slate-50 focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition-all font-medium placeholder:text-slate-300 dark:placeholder:text-slate-600" />
+                    <div className="space-y-2 md:space-y-3">
+                      <label className="text-[10px] md:text-[11px] font-black text-brand-600 dark:text-brand-500 uppercase tracking-widest ml-1">{t.interests}</label>
+                      <input type="text" placeholder={t.interestsPlaceholder} value={interests} onChange={e => handleInputChange(e, setInterests)} className="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 rounded-2xl md:rounded-3xl px-6 md:px-8 py-4 md:py-5 text-slate-900 dark:text-slate-50 focus:border-brand-500 outline-none text-lg md:text-2xl font-semibold placeholder:text-slate-300" />
                     </div>
                   </div>
 
-                  <button type="submit" className="w-full bg-brand-600 hover:bg-brand-700 text-white font-black py-6 rounded-[2rem] shadow-xl shadow-brand-500/25 dark:shadow-none transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center text-xl space-x-3">
+                  <button type="submit" className="w-full bg-brand-600 hover:bg-brand-700 text-white font-black py-4 md:py-6 rounded-2xl md:rounded-[2rem] shadow-xl shadow-brand-500/25 transition-all flex items-center justify-center text-lg md:text-xl space-x-3">
                     <span>{t.buttonCraft}</span>
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                    <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
                   </button>
                 </form>
-                {error && <div className="mt-8 p-5 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 rounded-3xl text-red-700 dark:text-red-400 text-sm font-bold animate-fadeIn">{error}</div>}
+                {error && <div className="mt-6 md:mt-8 p-4 md:p-5 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 rounded-2xl md:rounded-3xl text-red-700 dark:text-red-400 text-sm font-bold animate-fadeIn">{error}</div>}
               </div>
 
-              {/* Collections Sidebar */}
-              <div className="lg:col-span-5 bg-slate-100/30 dark:bg-slate-900/20 rounded-[3rem] p-10 border border-slate-200/60 dark:border-slate-800/40 flex flex-col min-h-[460px]">
-                <h3 className="text-xl font-outfit font-bold text-slate-900 dark:text-slate-50 mb-8 flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-xl bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
-                    <svg className="w-4 h-4 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+              <div className="lg:col-span-5 bg-slate-100/30 dark:bg-slate-900/20 rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 border border-slate-200/60 dark:border-slate-800/40 flex flex-col min-h-[300px]">
+                <h3 className="text-lg md:text-xl font-outfit font-bold text-slate-900 dark:text-slate-50 mb-6 flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-xl bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center text-brand-600">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
                   </div>
                   <span>{t.savedTrips}</span>
                 </h3>
                 {savedTrips.length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-slate-400/80 text-center px-6 space-y-4">
-                    <div className="w-16 h-16 rounded-3xl bg-slate-50 dark:bg-slate-800/40 flex items-center justify-center">
-                       <svg className="w-8 h-8 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
-                    </div>
-                    <p className="text-sm font-medium tracking-tight">{t.noSaved}</p>
+                  <div className="flex-1 flex flex-col items-center justify-center text-slate-400 text-center px-4 space-y-3">
+                    <p className="text-sm font-medium">{t.noSaved}</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 gap-4 overflow-y-auto custom-scrollbar pr-2 pb-4">
+                  <div className="grid grid-cols-1 gap-3 overflow-y-auto custom-scrollbar pr-2 pb-2">
                     {savedTrips.map(trip => (
-                      <div key={trip.id} onClick={() => { setTripCache({ [lang]: trip }); setCurrentSlideIndex(0); setViewMode('itinerary'); }} className="group bg-white dark:bg-slate-800 hover:shadow-lg hover:shadow-brand-100/10 dark:hover:shadow-none hover:-translate-y-0.5 p-5 rounded-3xl border border-slate-100/80 dark:border-slate-700/40 transition-all cursor-pointer flex justify-between items-center">
-                        <div className="flex-1">
-                          <h4 className="font-bold text-slate-900 dark:text-slate-50 line-clamp-1 text-base tracking-tight">{trip.tripTitle}</h4>
-                          <p className="text-[10px] text-slate-500 font-black uppercase mt-1.5 tracking-widest flex items-center space-x-2">
-                             <span className="text-brand-600 dark:text-brand-500">{trip.days} {t.days}</span>
-                             <span className="opacity-20">•</span>
-                             <span className="truncate">{trip.destination}</span>
-                          </p>
+                      <div key={trip.id} onClick={() => { setTripCache({ [lang]: trip }); setCurrentSlideIndex(0); setViewMode('itinerary'); }} className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100/80 dark:border-slate-700/40 cursor-pointer flex justify-between items-center hover:border-brand-500 transition-colors">
+                        <div className="flex-1 overflow-hidden">
+                          <h4 className="font-bold text-slate-900 dark:text-slate-50 truncate text-sm">{trip.tripTitle}</h4>
+                          <p className="text-[9px] text-slate-500 font-black uppercase mt-1 tracking-widest truncate">{trip.days} {t.days} journey to {trip.destination}</p>
                         </div>
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 dark:bg-slate-700/40 text-slate-300 dark:text-slate-600 group-hover:bg-brand-50 group-hover:text-brand-600 transition-colors">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+                        <div className="ml-2 w-6 h-6 rounded-full flex items-center justify-center bg-slate-50 dark:bg-slate-700 text-slate-300">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
                         </div>
                       </div>
                     ))}
@@ -425,56 +427,82 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Global Loading View */}
+        {/* Loading View */}
         {loading && (
-          <div className="absolute inset-0 z-[100] bg-white/70 dark:bg-slate-950/70 backdrop-blur-2xl flex flex-col items-center justify-center p-12 animate-fadeIn">
-            <div className="relative w-32 h-32 mb-10">
-              <div className="absolute inset-0 rounded-[2.5rem] border-4 border-slate-100 dark:border-slate-800/50"></div>
-              <div className="absolute inset-0 rounded-[2.5rem] border-4 border-t-brand-600 animate-spin" style={{ animationDuration: '0.8s' }}></div>
-              <div className="absolute inset-4 rounded-[1.5rem] border-2 border-slate-100 dark:border-slate-800/50"></div>
-              <div className="absolute inset-4 rounded-[1.5rem] border-2 border-b-brand-400 animate-spin" style={{ animationDuration: '1.2s', animationDirection: 'reverse' }}></div>
+          <div className="absolute inset-0 z-[100] bg-white/70 dark:bg-slate-950/70 backdrop-blur-2xl flex flex-col items-center justify-center p-6 animate-fadeIn">
+            <div className="relative w-20 h-20 md:w-32 md:h-32 mb-8">
+              <div className="absolute inset-0 rounded-[1.5rem] md:rounded-[2.5rem] border-4 border-slate-100 dark:border-slate-800/50"></div>
+              <div className="absolute inset-0 rounded-[1.5rem] md:rounded-[2.5rem] border-4 border-t-brand-600 animate-spin"></div>
             </div>
-            <div className="text-center space-y-3">
-              <h3 className="text-3xl font-outfit font-bold text-slate-900 dark:text-slate-50 tracking-tighter">{t.loading[loadingMsgIdx]}</h3>
-              <p className="text-slate-500 dark:text-slate-400 font-medium text-lg italic opacity-80">{tripData ? t.translating : "Drafting your ultimate experience..."}</p>
+            <div className="text-center space-y-2">
+              <h3 className="text-xl md:text-3xl font-outfit font-bold text-slate-900 dark:text-slate-50">{t.loading[loadingMsgIdx]}</h3>
             </div>
           </div>
         )}
 
-        {/* Core Application View */}
+        {/* Itinerary View */}
         {tripData && viewMode === 'itinerary' && (
-          <div className="h-full p-4 lg:p-6 flex flex-col lg:flex-row gap-6 animate-fadeIn">
-            {/* Left Column: Itinerary Details */}
-            <div className="w-full lg:w-96 xl:w-[440px] h-full flex flex-col">
+          <div className="flex-1 flex flex-col lg:flex-row p-0 md:p-4 lg:p-6 gap-0 md:gap-6 animate-fadeIn h-full overflow-hidden">
+            {/* Desktop: Show both, Mobile: Toggle via SubView */}
+            <div className={`w-full lg:w-96 xl:w-[440px] h-full flex flex-col ${itinerarySubView === 'map' ? 'hidden lg:flex' : 'flex'}`}>
               <PlanDisplay slide={tripData.slides[currentSlideIndex]} currentIndex={currentSlideIndex} totalSlides={tripData.slides.length} onNext={() => setCurrentSlideIndex(p => p + 1)} onPrev={() => setCurrentSlideIndex(p => p - 1)} language={lang} />
+              
+              {/* Desktop Grounding Sources Footer */}
+              {tripData.groundingSources && tripData.groundingSources.length > 0 && (
+                <div className="hidden lg:block mt-4 bg-white/50 dark:bg-slate-900/50 p-4 rounded-3xl border border-slate-100 dark:border-slate-800">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">{t.sources}</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {tripData.groundingSources.slice(0, 3).map((s, i) => (
+                      <a key={i} href={s.uri} target="_blank" rel="noopener noreferrer" className="text-[9px] font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/30 px-2 py-1 rounded-lg truncate max-w-[150px]">{s.title}</a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             
-            {/* Right Column: Map Visualization */}
-            <div className="flex-1 rounded-[3rem] bg-white dark:bg-slate-900 shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 relative overflow-hidden group">
-               {/* Map Status Bar */}
-               <div className="absolute top-6 left-6 right-6 z-20 flex justify-between items-start pointer-events-none">
-                 <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl px-6 py-4 rounded-3xl border border-white/60 dark:border-slate-700/60 shadow-xl pointer-events-auto flex flex-col">
-                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-50 tracking-tight leading-none">{tripData.tripTitle}</h3>
-                    <div className="flex items-center mt-2 space-x-3">
-                      <div className="flex items-center space-x-1.5">
-                        <div className="w-2 h-2 rounded-full bg-brand-500"></div>
-                        <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{tripData.destination}</span>
-                      </div>
-                      <span className="text-[10px] text-slate-300 dark:text-slate-700 font-bold">•</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest">{tripData.days} {t.days} Journey</span>
+            <div className={`flex-1 rounded-none md:rounded-[2.5rem] lg:rounded-[3rem] bg-white dark:bg-slate-900 shadow-none md:shadow-2xl border-0 md:border md:border-slate-100 dark:md:border-slate-800 relative overflow-hidden h-full ${itinerarySubView === 'details' ? 'hidden lg:block' : 'block'}`}>
+               <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-start pointer-events-none">
+                 <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl px-4 py-3 rounded-2xl border border-white/60 dark:border-slate-700 shadow-lg pointer-events-auto">
+                    <h3 className="text-xs md:text-sm font-bold text-slate-900 dark:text-slate-50 leading-none">{tripData.tripTitle}</h3>
+                    <div className="flex items-center mt-1 space-x-2">
+                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{tripData.destination}</span>
+                      <span className="text-[9px] text-slate-300">•</span>
+                      <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest">{tripData.days} {t.days}</span>
                     </div>
                  </div>
                </div>
-               
                <TravelMap slides={tripData.slides} currentSlideIndex={currentSlideIndex} onMarkerClick={setCurrentSlideIndex} darkMode={darkMode} />
+            </div>
+
+            {/* Mobile Tab Toggle Bar */}
+            <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 flex bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl z-[60]">
+               <button onClick={() => setItinerarySubView('details')} className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all ${itinerarySubView === 'details' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/20' : 'text-slate-500 dark:text-slate-400'}`}>
+                 {t.listView}
+               </button>
+               <button onClick={() => setItinerarySubView('map')} className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all ${itinerarySubView === 'map' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/20' : 'text-slate-500 dark:text-slate-400'}`}>
+                 {t.mapView}
+               </button>
             </div>
           </div>
         )}
 
-        {/* Gallery Mode */}
+        {/* Gallery View */}
         {tripData && viewMode === 'gallery' && (
           <div className="absolute inset-0 z-10 animate-fadeIn overflow-y-auto custom-scrollbar">
-            <TripGallery slides={tripData.slides} onNavigateToSlide={idx => { setCurrentSlideIndex(idx); setViewMode('itinerary'); }} onUpdateImage={handleImageUpdate} imageGenProgress={imageGenProgress} />
+            <TripGallery slides={tripData.slides} onNavigateToSlide={idx => { setCurrentSlideIndex(idx); setViewMode('itinerary'); setItinerarySubView('details'); }} onUpdateImage={handleImageUpdate} imageGenProgress={imageGenProgress} />
+          </div>
+        )}
+
+        {/* Mobile View Mode Switcher (Gallery vs Itinerary) */}
+        {tripData && (
+          <div className="md:hidden fixed top-20 right-4 z-[60] flex flex-col space-y-2">
+            <button onClick={() => setViewMode(viewMode === 'itinerary' ? 'gallery' : 'itinerary')} className="w-10 h-10 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center shadow-lg text-slate-600 dark:text-slate-300">
+               {viewMode === 'itinerary' ? (
+                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+               ) : (
+                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+               )}
+            </button>
           </div>
         )}
       </main>
